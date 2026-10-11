@@ -1,0 +1,32 @@
+package io.github.sabopura.morphe.patches.googlenews
+
+import app.morphe.patcher.patch.AppTarget
+import app.morphe.patcher.patch.Compatibility
+
+internal object Constants {
+    const val GOOGLE_NEWS_PACKAGE = "com.google.android.apps.magazines"
+
+    val GOOGLE_NEWS = Compatibility(
+        name = "Google News",
+        packageName = GOOGLE_NEWS_PACKAGE,
+        description = "Official Google News app; anchors are un-obfuscated activity, provider and GMS strings.",
+        appIconColor = 0x4285F4,
+        signatures = setOf(
+            // Original and rotated (API 33+) Google signing certificates.
+            "f0fd6c5b410f25cb25c3b53346c8972fae30f8ee7411df910480ad6b2d60db83",
+            "7ce83c1b71f3d572fed04c8d40c5cb10ff75e6d87d9df6fbd53f0468c2905053",
+        ),
+        targets = listOf(
+            AppTarget(
+                version = "5.168.0.982359681",
+                minSdk = 24,
+                description = "Latest; patched, installed and launched on API 36.",
+            ),
+            AppTarget(
+                version = "5.163.0.947799485",
+                minSdk = 24,
+                description = "Last version supported by docbt/patched-up 1.10.0.",
+            ),
+        ),
+    )
+}

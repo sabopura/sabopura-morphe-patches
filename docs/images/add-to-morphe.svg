@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="68" viewBox="0 0 340 68" role="img" aria-label="Morphe に追加">
+  <title>Morphe に追加</title>
+  <defs>
+    <linearGradient id="fill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="68" rx="34" fill="url(#fill)"/>
+  <rect x="1" y="1" width="338" height="66" rx="33" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2"/>
+  <circle cx="38" cy="34" r="20" fill="#ffffff" fill-opacity="0.2"/>
+  <path d="M38 24v20M28 34h20" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <text x="72" y="32" fill="#ffffff" font-size="21" font-weight="700"
+        font-family="'Segoe UI','Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic UI',Meiryo,sans-serif">Morphe に追加</text>
+  <text x="72" y="52" fill="#ffffff" fill-opacity="0.88" font-size="13"
+        font-family="'Segoe UI','Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP','Yu Gothic UI',Meiryo,sans-serif">タップするだけでソースに登録できます</text>
+</svg>

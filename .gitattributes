@@ -1,0 +1,9 @@
+#
+# https://help.github.com/articles/dealing-with-line-endings/
+#
+# Linux start script should use lf
+/gradlew        text eol=lf
+
+# The wrapper is already stored with CRLF in this repository. Keep its bytes
+# stable so Windows clean-checks do not report a line-ending-only modification.
+/gradlew.bat     -text

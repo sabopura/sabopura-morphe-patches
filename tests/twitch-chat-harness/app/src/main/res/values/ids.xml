@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="cast_button" type="id" />
+    <item name="landscape_chat_container" type="id" />
+    <item name="chat_view_delegate_root" type="id" />
+    <item name="viewer_landing_bottom_navigation_group" type="id" />
+    <item name="fragment_container" type="id" />
+    <item name="rating_banner_container" type="id" />
+</resources>

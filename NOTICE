@@ -1,0 +1,54 @@
+Morphe NOTICE
+=============
+
+7c. Project Name Restriction
+----------------------------
+
+This license does not grant permission to use the name "Morphe", or any
+name, logo, or branding that is confusingly similar, as the name or
+primary identifying mark of any modified version, fork, or derivative work.
+
+Any redistribution or derivative work must adopt a distinct name and
+branding that clearly differentiates it from the Morphe project and does
+not cause confusion as to source or origin.
+
+References to Morphe are permitted solely for descriptive compatibility
+purposes (e.g., "compatible with Morphe" or "XYZ patches for use with Morphe"),
+provided that such references:
+
+- Are accurate, factual, and non-misleading;
+- Do not suggest authorship by the Morphe project; and
+- Appear only in a secondary or descriptive context, not as part of the product or project name.
+
+Third-party work
+================
+
+The Twitch emote runtime (extensions/twitch/src/main/java/io/github/sabopura/morphe/extension/twitch/chat/emotes),
+channel/chat-row anchor design, deleted-message, points, notification and login patches derive from Hooman's Morphe Patches,
+https://github.com/arandomhooman/hoomans-morphe-patches,
+revision 018277825a611ad61f3a16a70e562291c06f4081, licensed under GPLv3.
+Changes add FFZ, provider switches, CDN validation, lifecycle fixes, overlays,
+image limits, an emote picker, and integration with independently implemented
+chat and player settings. Points now use semantic model/contract resolution,
+native eligibility results, deferred/coalesced execution and bounded retries.
+Notification correction is endpoint-scoped and preserves header API semantics;
+the optional login workaround returns the native Kotlin Unit instance.
+
+SVG badge rendering uses the unmodified AndroidSVG 1.4 library,
+com.caverock:androidsvg-aar:1.4, by Paul LeBeau and contributors:
+https://github.com/BigBadaboom/androidsvg
+Licensed under Apache License 2.0; a copy is included in
+patches/src/main/resources/licenses/androidsvg-LICENSE.txt.
+
+The Pinterest patches (patches/src/main/kotlin/io/github/sabopura/morphe/patches/pinterest)
+are a rewrite of the Pinterest patches in Binarymend Patches 1.3.1
+(https://github.com/binarymend/morphe-patches), licensed under GPLv3.
+
+The Google News patches (patches/src/main/kotlin/io/github/sabopura/morphe/patches/googlenews)
+"Enable CustomTabs" and "GmsCore support" are rewrites of the Google News patches in
+docbt/patched-up 1.10.0 (https://github.com/docbt/patched-up), licensed under GPLv3.
+
+The Sankaku patch "Disable Infinite Upgrade Popup"
+(patches/src/main/kotlin/io/github/sabopura/morphe/patches/sankaku) is a rewrite of the
+patch of the same name in HellveticaPatches 1.1.3
+(https://github.com/HellveticaStandard/HellveticaPatches), licensed under GPLv3.

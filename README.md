@@ -1,0 +1,112 @@
+# Sabopura Morphe Patches
+
+[Morphe](https://github.com/MorpheApp/morphe-manager) で使うパッチ集です。YouTube と Twitch の動画に弾幕コメントを流したり、各アプリの広告や追跡を止めたりします。
+
+<p align="center">
+  <a href="https://morphe.software/add-source?github=sabopura/sabopura-morphe-patches">
+    <img src="docs/images/add-to-morphe.svg" alt="➕ Morphe に追加" width="340">
+  </a>
+</p>
+
+<p align="center">
+  <b>Morphe Manager を入れたスマホで、上のボタンをタップするだけで追加できます。</b><br>
+  開いたページで「Open in Morphe」をタップし、Morphe Manager で追加を確定すれば完了です。<br>
+  パソコンで開いた場合は QR コードが表示されるので、スマホで読み取ってください。
+</p>
+
+<p align="center">
+  <img src="docs/images/twitch-menu.gif" alt="Twitch のプレイヤーメニューと設定画面" width="320">
+</p>
+
+> ⚠️ 個人用に作ったものを公開しています。動作確認は限られた環境のみで、不具合があっても対応できない場合があります。自己責任でお使いください。
+
+## できること
+
+### YouTube
+
+- **Danmaku comments**：通常のコメント、ライブチャット、チャットのリプレイを、ニコニコ動画のように動画の上に流します。API キーは使いません。NG ワード、文字サイズ、速さなどは YouTube の設定画面から変えられます。
+- **Ambient light**：動画の周りの黒い帯を、映像の色でやわらかく照らします（PC 版の拡張機能「Ambient light for YouTube」と同じ考え方です）。
+
+### Twitch
+
+- **Danmaku chat**：ライブチャットを配信の上に流します。エモートも画像で表示します。
+- **Chat enhancements**：7TV / BetterTTV / FrankerFaceZ のエモート、追加バッジ、代名詞、NG ワード、非表示ユーザー、ハイライト、送信時刻、文字サイズ、過去チャットの取得、表示したメッセージの検索。
+- **Player enhancements**：再生速度、シーク幅、スリープタイマー、再生統計、VOD のチャット同期とチャプター、明るさ・音量のジェスチャー、横画面のチャット幅、ミニプレイヤーの大きさ、ホーム画面の整理など。
+- **Show deleted messages**：削除されたメッセージを読めるまま残します。
+- **Hide display ads**：バナーなどの表示広告を隠します。
+- **Auto claim channel points**：受け取れるボーナスを自動で受け取ります。
+- **Fix notifications** / **Fix login**：再署名したアプリで通知やログインがうまくいかないときの対策です（Fix login は必要なときだけ選んでください）。
+
+プレイヤーの右上に追加されるボタンを**タップ**するとメニューが、**長押し**すると弾幕のオン/オフができます。設定はすべて 1 つの画面にまとめています。詳しくは [Twitch の使い方](docs/twitch.md) を見てください。
+
+### そのほかのアプリ
+
+| アプリ | できること |
+| --- | --- |
+| Reddit | 投稿とコメントを自動で翻訳します（初期設定は日本語） |
+| SmartNews | 広告を取り除きます |
+| Pinterest | 宣伝ピンの扱いを止め、Bugsnag と各種計測を止めます |
+| pixiv | 広告を隠し、広告 SDK の初期化を止めます（プレミアム機能は解放しません） |
+| Google News | 記事をブラウザーの Custom Tabs で開きます。MicroG（GmsCore）で使えるようにします |
+| Sankaku | 有料プランの宣伝ポップアップと、アプリ内容の自動更新（OTA）を止めます |
+
+## 導入方法
+
+1. [Morphe Manager](https://github.com/MorpheApp/morphe-manager/releases/latest) をインストールします。
+2. スマホでこのボタンをタップして、パッチを追加します。
+
+   [![➕ Morphe に追加](docs/images/add-to-morphe.svg)](https://morphe.software/add-source?github=sabopura/sabopura-morphe-patches)
+
+   新しい版が出たときは、Morphe Manager が自動で更新します。
+   <details>
+   <summary>ボタンが使えないとき</summary>
+
+   Morphe Manager の **ソース → ＋ → リモート** に、このリポジトリの URL を入力します。
+   ```
+   https://github.com/sabopura/sabopura-morphe-patches
+   ```
+   [Releases](../../releases) から `.mpp` ファイルをダウンロードして、**ローカル** として追加することもできます（この場合は自動更新されません）。
+   </details>
+3. 下の表の対応バージョンの**公式 APK** を用意し、Morphe Manager でパッチを選んで適用します。
+
+パッチを当てた APK はここでは配布していません。元の APK はご自身で用意してください。YouTube は、Morphe 公式のパッチ（MicroG 対応など）と一緒に使うことを想定しています。
+
+## 対応バージョン
+
+| アプリ | パッケージ名 | 対応バージョン |
+| --- | --- | --- |
+| YouTube | `com.google.android.youtube` | 21.04.223, 21.34.248, 21.35.443, 21.35.448, 21.40.161, 21.40.165 |
+| Twitch | `tv.twitch.android.app` | 30.7.2, 31.5.2 |
+| Reddit | `com.reddit.frontpage` | 2026.28.0, 2026.30.0, 2026.35.0, 2026.37.0〜2026.41.0 |
+| SmartNews | `jp.gocro.smartnews.android` | 26.6.50, 26.7.10, 26.8.50, 26.9.11, 26.9.20, 26.10.10 |
+| Pinterest | `com.pinterest` | 14.11.0, 14.38.0, 14.39.0 |
+| pixiv | `jp.pxv.android` | 6.199.0 |
+| Google News | `com.google.android.apps.magazines` | 5.163.0.947799485, 5.168.0.982359681 |
+| Sankaku | `com.sankakucomplex.channel.black` | 4.26, 4.27 |
+
+新しいバージョンには、確認が済んだものから順に対応していきます。表にないバージョンでは動かないことがあります。
+
+## 確認済みの環境
+
+- Android 16（API 36）のエミュレーターで、各アプリへのパッチ適用、起動、主な操作を確認しています。
+  - YouTube：公開動画で弾幕が取得・表示されること
+  - SmartNews：広告のないフィードが表示され、スクロールできること
+  - Twitch：プレイヤーのボタン、メニュー、設定画面が開くこと。チャット行の描画
+- ログインが必要な画面（Twitch の配信視聴、Reddit・Pinterest のフィードなど）は、エミュレーターでは確認できていません。Google News は記事の読み込み中にエミュレーター自体が終了するため、起動までの確認です。
+
+各パッチの詳しい動作と制限は [アプリ別の説明（英語）](docs/apps.md) にまとめています。
+
+## ソースからビルドする
+
+JDK 21 と Android SDK が必要です。Morphe の依存関係は GitHub Packages から取得するため、`read:packages` 権限のある GitHub トークンを環境変数 `GITHUB_ACTOR` と `GITHUB_TOKEN` に設定してください。
+
+```sh
+./gradlew :patches:buildAndroid :patches:generatePatchesList
+```
+
+`patches/build/libs/patches-<バージョン>.mpp` ができます。
+
+## ライセンス
+
+[GPLv3](LICENSE)（無保証）。他の方のコードを元にした部分の出典は [NOTICE](NOTICE) にあります。
+「Morphe」は互換性を説明するための表記で、このリポジトリは Morphe の公式プロジェクトではありません。
