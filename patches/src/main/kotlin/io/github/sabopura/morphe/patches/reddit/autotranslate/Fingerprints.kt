@@ -16,6 +16,9 @@ internal const val COMMENT_INDICATOR_STATE =
     "Lcom/reddit/localization/translations/TranslationIndicatorState;"
 internal const val COMMENT_EVENT_SOURCE =
     "Lcom/reddit/comments/events/translation/TranslationCommentEventSource;"
+internal const val POST_DETAIL_JOIN_BUTTON_STATE =
+    "Lcom/reddit/frontpage/presentation/detail/state/PostUnitMetadata\$JoinButtonState;"
+internal const val FUNCTION_0 = "Lkotlin/jvm/functions/Function0;"
 
 /**
  * Matches every post callback that builds Reddit's stable translation event.
@@ -66,6 +69,36 @@ internal object CommentTranslateCallbackFingerprint : Fingerprint(
         methodCall(
             returnType = "V",
             parameters = listOf("Ljava/lang/String;", COMMENT_EVENT_SOURCE),
+        ),
+    ),
+)
+
+/**
+ * Matches the post-detail metadata composable that shows the post's translation indicator.
+ *
+ * Its indicator click lambda only knows the state and the screen's event sink, so the patch
+ * hooks the composable itself, where the post metadata model (and its id) is in scope.
+ */
+internal object PostDetailTranslationIndicatorFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        fieldAccess(opcode = Opcode.IGET_OBJECT, type = COMMENT_INDICATOR_STATE),
+        fieldAccess(
+            opcode = Opcode.SGET_OBJECT,
+            definingClass = POST_DETAIL_JOIN_BUTTON_STATE,
+            name = "GONE",
+            type = POST_DETAIL_JOIN_BUTTON_STATE,
+        ),
+        methodCall(
+            returnType = "V",
+            parameters = listOf(
+                COMMENT_INDICATOR_STATE,
+                "L",
+                FUNCTION_0,
+                "L",
+                "I",
+                "I",
+            ),
         ),
     ),
 )

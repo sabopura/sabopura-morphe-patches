@@ -1,6 +1,7 @@
 package io.github.sabopura.morphe.patches.reddit.autotranslate
 
 import app.morphe.patcher.Match
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
@@ -8,18 +9,25 @@ import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.stringOption
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import io.github.sabopura.morphe.patches.reddit.Constants.REDDIT_2026_28_0
 import java.util.logging.Logger
 
 private const val EXTENSION = "Lio/github/sabopura/morphe/extension/reddit/AutoTranslate;"
 private const val FUNCTION_1 = "Lkotlin/jvm/functions/Function1;"
 private const val STRING = "Ljava/lang/String;"
+private const val COMMENT_TRANSLATE_EVENT_TO_STRING = "OnClickTranslateEvent("
+private const val POST_DETAIL_ID_TO_STRING = "linkIdWithKind="
 private val languageTagPattern = Regex("^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\$")
 private val logger = Logger.getLogger("Morphe.Reddit.AutoTranslate")
 
@@ -266,6 +274,20 @@ val autoTranslatePatch = bytecodePatch(
             )
         }
 
+        // The accessibility callback class also holds the "show original" action next to the
+        // translate action. Only the translate branch may be invoked automatically, otherwise a
+        // freshly translated comment is reverted again.
+        val translateEventClasses = mutableMapOf<String, Boolean>()
+        fun isTranslateEvent(type: String) = translateEventClasses.getOrPut(type) {
+            classDefByOrNull(type)?.methods
+                ?.firstOrNull { it.name == "toString" && it.parameterTypes.isEmpty() }
+                ?.implementation?.instructions
+                ?.any {
+                    ((it as? ReferenceInstruction)?.reference as? StringReference)
+                        ?.string?.startsWith(COMMENT_TRANSLATE_EVENT_TO_STRING) == true
+                } == true
+        }
+
         val accessibilityMatches =
             AccessibilityCommentTranslateCallbackFingerprint.matchAllOrNull().orEmpty()
         var patchedAccessibilityConstructors = 0
@@ -278,12 +300,27 @@ val autoTranslatePatch = bytecodePatch(
                         reference.name == "INDICATOR" &&
                         reference.type == COMMENT_EVENT_SOURCE
                 }
+            }.filter { indicatorIndex ->
+                val eventConstructor = callbackInstructions
+                    .drop(indicatorIndex + 1)
+                    .firstNotNullOfOrNull { instruction ->
+                        ((instruction as? ReferenceInstruction)?.reference as? MethodReference)
+                            ?.takeIf {
+                                instruction.opcode == Opcode.INVOKE_DIRECT &&
+                                    it.name == "<init>" &&
+                                    it.parameterTypes.map(CharSequence::toString) ==
+                                    listOf(STRING, COMMENT_EVENT_SOURCE)
+                            }
+                    }
+                eventConstructor != null && isTranslateEvent(eventConstructor.definingClass)
             }
             val selectors = indicatorIndexes.map { selectorAt(match, it) }.distinct().sorted()
             if (selectors.isEmpty()) {
-                throw PatchException(
-                    "Cannot derive accessibility selectors for ${match.originalClassDef.type}",
+                logger.warning(
+                    "Skipped accessibility callback ${match.originalClassDef.type}: " +
+                        "no translate-only selector",
                 )
+                return@forEach
             }
             val constructors = match.classDef.methods.filter { constructor ->
                 constructor.name == "<init>" &&
@@ -325,6 +362,67 @@ val autoTranslatePatch = bytecodePatch(
             )
         }
 
+        fun invokeArgumentRegisters(instruction: Instruction): List<Int> = when (instruction) {
+            is RegisterRangeInstruction ->
+                List(instruction.registerCount) { instruction.startRegister + it }
+            is FiveRegisterInstruction -> listOf(
+                instruction.registerC,
+                instruction.registerD,
+                instruction.registerE,
+                instruction.registerF,
+                instruction.registerG,
+            ).take(instruction.registerCount)
+            else -> emptyList()
+        }
+
+        // The post-detail screen uses its own indicator lambda, which captures neither the post
+        // nor its id. Hook the composable instead: note the metadata model when its indicator
+        // state is read, then hand the composed click lambda and state to the extension.
+        val postDetailMatches =
+            PostDetailTranslationIndicatorFingerprint.matchAllOrNull().orEmpty()
+        var patchedPostDetailMethods = 0
+        postDetailMatches.forEach { match ->
+            val stateMatch = match.instructionMatches.first()
+            val indicatorMatch = match.instructionMatches.last()
+            val metadataType = fieldReference(stateMatch.instruction)?.definingClass
+            val hasPostIdAnchor = metadataType?.let(::classDefByOrNull)?.methods
+                ?.firstOrNull { it.name == "toString" && it.parameterTypes.isEmpty() }
+                ?.implementation?.instructions
+                ?.any {
+                    ((it as? ReferenceInstruction)?.reference as? StringReference)
+                        ?.string?.contains(POST_DETAIL_ID_TO_STRING) == true
+                } == true
+            val metadataRegister = (stateMatch.instruction as? TwoRegisterInstruction)
+                ?.takeIf { it.registerA != it.registerB }
+                ?.registerB
+            val arguments = invokeArgumentRegisters(indicatorMatch.instruction)
+            val stateRegister = arguments.getOrNull(0)
+            val callbackRegister = arguments.getOrNull(2)
+            if (!hasPostIdAnchor || metadataRegister == null || stateRegister == null ||
+                callbackRegister == null || stateRegister > 15 || callbackRegister > 15
+            ) {
+                logger.warning(
+                    "Skipped post-detail indicator in ${match.originalClassDef.type}: " +
+                        "unexpected metadata or registers",
+                )
+                return@forEach
+            }
+
+            // Insert the later hook first so the earlier index stays valid.
+            match.method.addInstructions(
+                indicatorMatch.index + 1,
+                "invoke-static {v$callbackRegister, v$stateRegister}, " +
+                    "$EXTENSION->onPostDetail(Ljava/lang/Object;Ljava/lang/Object;)V",
+            )
+            match.method.addInstructions(
+                stateMatch.index + 1,
+                "invoke-static {v$metadataRegister}, " +
+                    "$EXTENSION->notePostDetail(Ljava/lang/Object;)V",
+            )
+            patchedPostDetailMethods++
+            logger.info("Matched post-detail indicator ${match.originalClassDef.type}")
+        }
+
         val criticalMatches = postMatches.size + commentMatches.size + accessibilityMatches.size
         if (criticalMatches == 0) {
             throw PatchException(
@@ -354,7 +452,9 @@ val autoTranslatePatch = bytecodePatch(
                 "post=${postMatches.size}/constructors=$patchedPostConstructors, " +
                 "comment=${commentMatches.size}/constructors=$patchedCommentConstructors, " +
                 "accessibility=${accessibilityMatches.size}/" +
-                "constructors=$patchedAccessibilityConstructors, header=${headerMatch != null}",
+                "constructors=$patchedAccessibilityConstructors, " +
+                "postDetail=${postDetailMatches.size}/methods=$patchedPostDetailMethods, " +
+                "header=${headerMatch != null}",
         )
     }
 }

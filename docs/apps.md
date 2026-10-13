@@ -33,6 +33,11 @@ the `target_language` option accepts a BCP-47 language tag.
 
 The patch includes a small runtime extension that rate-limits callbacks and
 suppresses repeated translation requests for the same post or comment.
+Feed posts, comments and the post on the post-detail screen are covered. Once
+an item has been shown translated, it is not translated again automatically,
+so "show original" keeps the original text for the rest of the app session.
+Only the translate action of the comment accessibility callback is invoked;
+its "show original" action is left to the user.
 
 Reddit `2026.28.0[2628060]` and `2026.30.0[2630060]` were verified to patch and
 rebuild successfully. The latter was also signed, installed, and cold-launched
