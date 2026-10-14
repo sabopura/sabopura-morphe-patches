@@ -17,7 +17,6 @@ import java.util.logging.Logger
 private const val PLAYER="Lio/github/sabopura/morphe/extension/twitch/player/PlayerTools;"
 private object VodComments : Fingerprint(strings=listOf("parseChommentResponse"))
 private object LiveManifest : Fingerprint(strings=listOf("usher.ttvnw.net","fast_bread"))
-private object DisplayResponse : Fingerprint(strings=listOf("failed to parse display ad response: ","could not parse content type: "))
 
 @Suppress("unused")
 val playerEnhancementsPatch=bytecodePatch(
@@ -63,18 +62,5 @@ val playerEnhancementsPatch=bytecodePatch(
     }
     finalize {
         enableTwitchFeature("playerPatch")
-    }
-}
-
-@Suppress("unused")
-val hideDisplayAdsPatch=bytecodePatch(name="Hide display ads",description="Hide display banners and in-feed ad units.") {
-    compatibleWith(TWITCH_SUPPORTED)
-    execute {
-        val parser=DisplayResponse.method
-        val singleton=parser.instructions.mapNotNull {
-            if(it.opcode==Opcode.SGET_OBJECT)(it as? ReferenceInstruction)?.reference as? FieldReference else null
-        }.distinct().singleOrNull { field -> classDefBy(field.type).superclass==parser.returnType }
-            ?:throw PatchException("Hide display ads: no-ad response singleton was not resolved uniquely")
-        parser.addInstructions(0,"sget-object v0, $singleton\nreturn-object v0")
     }
 }

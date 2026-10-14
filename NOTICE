@@ -34,6 +34,18 @@ native eligibility results, deferred/coalesced execution and bounded retries.
 Notification correction is endpoint-scoped and preserves header API semantics;
 the optional login workaround returns the native Kotlin Unit instance.
 
+The Twitch "Block ads" patch was implemented from an analysis of Twitch 31.5.2. It follows
+techniques published by:
+- ryykitty/twitch-patched (https://github.com/ryykitty/twitch-patched), GPLv3: wrapping the
+  Amazon IVS HTTP client, making its callback interfaces public, and answering the player
+  with a rebuilt playlist response.
+- bakwudo/uyu (https://github.com/bakwudo/uyu), GPLv3: starting the ad request presenter in
+  its disabled state, the picture-by-picture feature check, covering an ad that is part of
+  the stream, opening live streams in the native player screen, and the row in Twitch's
+  settings screen.
+- TwitchAdSolutions and TwitchAdBlock (MIT), through the above: fetching playlists of other
+  player types while an ad is stitched into the stream.
+
 SVG badge rendering uses the unmodified AndroidSVG 1.4 library,
 com.caverock:androidsvg-aar:1.4, by Paul LeBeau and contributors:
 https://github.com/BigBadaboom/androidsvg

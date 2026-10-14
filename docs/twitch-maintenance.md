@@ -56,3 +56,29 @@ PackageManager の署名取得、Twitchログイン、他ドメインの通信�
 MPPは最後の `buildAndroid` で確定します。通常構成は `Fix login` を選ばず、
 ログイン修正ONの検証時だけ `--enable="Fix login"` を追加します。
 今回の検証では、実アカウントの宝箱受取・プッシュ到着・ログイン成功は未確認です。
+
+## 広告ブロック（Block ads）
+
+31.5.2 の解析にもとづく。照合は難読化名ではなく、次の目印で行う。どれか 1 つでも見つからなければパッチ全体を失敗させる。
+
+| 層 | 目印 | 動作 |
+| --- | --- | --- |
+| ① 広告要求のまとめ役 | 文字列 `ad request already active` のクラス。`StateMachine` を作る、boolean 引数 1 つのコンストラクタ | boolean を false にし、Twitch 自身の「広告なし」状態で開始 |
+| ② 広告サーバー API | Retrofit `create`（文字列 `API declarations must be interfaces.`）の `Proxy.newProxyInstance` の結果。`AdEdgeApi`（名前が残る） | 通信せずに失敗の `Result` を返す。`Single.just` は `io.reactivex.u` の `item is null` を持つ静的メソッド |
+| ② 応答の解析 | 文字列 `failed to parse display ad response: ` と `(Result, Z)` の引数 | 先頭で「広告なし」のシングルトンを返す |
+| ③ React Native | `NetworkingModule.sendRequestInternalReal`、`AdMetadataCueRouter.route`（名前が残る） | `edge.ads.twitch.tv` に 204 で応答、MAF と PbyP のキューを捨てる |
+| ④ 埋め込み広告 | `com.amazonaws.ivs.net.HttpClientFactory.create`（SDK の公開クラス）。`ReadCallback`/`StreamConsumer` を public にする | 広告入りの再生リストを、匿名の別トークン（`mobile_feed` → `embed` → `popout` → `autoplay`）の同じ画質の再生リストに差し替え |
+| ⑤ PbyP | 文字列 `processStateChange(Ltv/twitch/android/feature/pbyp/PbypPresenter$State;…` のクラスの `()Z` | false |
+| ⑥ 広告イベント | `OnSurestreamAdStarted(` などの toString を持つイベントと、その根の型だけを引数に取るメソッド（IVS と ExoPlayer の 2 つ） | 差し替えられなかった広告を黒い画面と消音で隠す |
+
+ライブの再生リストでは `EXT-X-MEDIA-SEQUENCE` と `EXT-X-TWITCH-LIVE-SEQUENCE` が一致する。番号を後者にそろえることで、2 つのセッションを継ぎ目なく切り替えられる。広告のない間は追加の通信をしない。
+
+検証：
+
+1. `VerifyAdsDex.java` で、書き換え箇所の数と `Single.just` の橋渡しを確認する。
+   `java -cp <morphe-desktop-all.jar> tests/twitch-compatibility/VerifyAdsDex.java <patched.apk>`
+2. `ads-probe/` の計測用 APK を、パッチ済みアプリと同じ鍵で署名して入れ、Twitch のプロセス内で実行する。
+   `adb shell am instrument -w io.github.sabopura.adsprobe/io.github.sabopura.adsprobe.AdsProbe`
+   実際の配信の再生前広告が差し替わること（Web の `site` トークンで約半数のチャンネルに入る）、
+   広告サーバー API が通信しないこと、広告イベントの処理を確認する。`RESULT failed=0` を確認する。
+3. ログインした実機で、配信と VOD を開き、`adb logcat -s SabopuraTwitch` で各層のログを確認する（エミュレーターでは未確認）。

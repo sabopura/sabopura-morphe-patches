@@ -15,6 +15,7 @@ public final class Features {
     public static int danmakuPatch() { return 0; }
     public static int chatPatch() { return 0; }
     public static int playerPatch() { return 0; }
+    public static int adsPatch() { return 0; }
 
     public static boolean danmaku() {
         return preview || danmakuPatch() != 0;
@@ -26,6 +27,10 @@ public final class Features {
 
     public static boolean player() {
         return preview || playerPatch() != 0;
+    }
+
+    public static boolean ads() {
+        return preview || adsPatch() != 0;
     }
 
     /** Shows every feature; used by the on-device verification harness only. */

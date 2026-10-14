@@ -15,7 +15,7 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import io.github.sabopura.morphe.patches.twitch.Constants.TWITCH_SUPPORTED
 import io.github.sabopura.morphe.patches.twitch.ui.enableTwitchFeature
 import io.github.sabopura.morphe.patches.twitch.ui.playerMenuResourcePatch
-import io.github.sabopura.morphe.patches.youtube.shared.replaceExtensionConstant
+import io.github.sabopura.morphe.patches.twitch.support.replaceExtensionConstant
 import java.util.logging.Logger
 
 private const val EXTENSION_CLASS =

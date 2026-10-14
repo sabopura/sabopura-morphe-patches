@@ -46,6 +46,7 @@ public final class PlayerMenuButton extends View {
     }
 
     private void init() {
+        Text.use(getContext());
         float density = getResources().getDisplayMetrics().density;
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeWidth(2f * density);
@@ -101,6 +102,51 @@ public final class PlayerMenuButton extends View {
         if (Features.chat()) ViewCustomization.observe(getRootView());
         describe();
         invalidate();
+        followControls();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (controlsListener != null) getViewTreeObserver().removeOnGlobalLayoutListener(controlsListener);
+        controlsListener = null;
+        super.onDetachedFromWindow();
+    }
+
+    private android.view.ViewTreeObserver.OnGlobalLayoutListener controlsListener;
+
+    /**
+     * Twitch shows and hides its player buttons one by one. This button follows Twitch's own
+     * settings (gear) button, so it never stays on screen after the controls fade.
+     */
+    private void followControls() {
+        if (controlsListener != null || !(getParent() instanceof View)) return;
+        View parent = (View) getParent();
+        int id = getResources().getIdentifier("settings_button", "id", "tv.twitch.android.app");
+        if (id == 0) id = getResources().getIdentifier("settings_button", "id", getContext().getPackageName());
+        View gear = id == 0 ? null : parent.findViewById(id);
+        if (gear == null) return; // Outside Twitch's player, for example in the test harness.
+        controlsListener = () -> {
+            int wanted = gear.getVisibility() == VISIBLE ? VISIBLE : GONE;
+            if (getVisibility() != wanted) setVisibility(wanted);
+        };
+        getViewTreeObserver().addOnGlobalLayoutListener(controlsListener);
+        controlsListener.onGlobalLayout();
+    }
+
+    private static final String HINT_SHOWN = "hint_player_button_shown";
+
+    /** Says once, the first time the button is on screen, what it is and where else to find it. */
+    @Override
+    public void onVisibilityAggregated(boolean isVisible) {
+        super.onVisibilityAggregated(isVisible);
+        if (!isVisible || getWidth() == 0) return;
+        android.content.SharedPreferences prefs = io.github.sabopura.morphe.extension.twitch.chat.ChatSettings.preferences(getContext());
+        if (prefs.getBoolean(HINT_SHOWN, false)) return;
+        prefs.edit().putBoolean(HINT_SHOWN, true).apply();
+        Toast.makeText(getContext(), label(
+                "吹き出しのボタンで、パッチのメニューと設定を開けます。Twitch の設定画面の一番上からも開けます",
+                "The speech bubble button opens the patch menu and settings. They are also at the top of Twitch's settings"),
+                Toast.LENGTH_LONG).show();
     }
 
     @Override

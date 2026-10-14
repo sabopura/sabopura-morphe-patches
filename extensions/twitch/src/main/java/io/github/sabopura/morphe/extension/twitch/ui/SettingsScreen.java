@@ -1,5 +1,7 @@
 package io.github.sabopura.morphe.extension.twitch.ui;
 
+import io.github.sabopura.morphe.extension.twitch.ads.AdBlock;
+
 import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -72,6 +74,7 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
 
     private SettingsScreen(Context context, String categoryId) {
         super(context, android.R.style.Theme_DeviceDefault_NoActionBar);
+        Text.use(context);
         ui = Ui.of(context);
         categories = Catalog.build();
         wide = Ui.wide(context);
@@ -96,6 +99,7 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
 
     @Override
     public SharedPreferences prefs(Catalog.Store store) {
+        if (store == Catalog.Store.ADS) return AdBlock.preferences(getContext());
         return store == Catalog.Store.DANMAKU
                 ? DanmakuSettings.preferences(getContext())
                 : ChatSettings.preferences(getContext());
@@ -103,7 +107,9 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
 
     @Override
     public void changed(Catalog.Store store) {
-        if (store == Catalog.Store.DANMAKU) {
+        if (store == Catalog.Store.ADS) {
+            // Read live by every ad layer; nothing to reload.
+        } else if (store == Catalog.Store.DANMAKU) {
             DanmakuSettings.reload(getContext());
             TwitchDanmaku.settingsChanged();
         } else {
@@ -283,6 +289,39 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
         }
     }
 
+    /** Back on older Android and in apps without predictive back. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onBackPressed() {
+        goBack();
+    }
+
+    /**
+     * Twitch targets Android 16, where the back gesture no longer arrives as a key event. Without
+     * this, the gesture closed the whole screen from inside a category.
+     */
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (android.os.Build.VERSION.SDK_INT >= 33 && backCallback == null) {
+            android.window.OnBackInvokedCallback callback = this::goBack;
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback);
+            backCallback = callback;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 && backCallback != null) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((android.window.OnBackInvokedCallback) backCallback);
+            backCallback = null;
+        }
+        super.onStop();
+    }
+
+    private Object backCallback;
+
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && event.isTracking() && !event.isCanceled()) {
@@ -312,7 +351,7 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
             title.setText(label("検索", "Search"));
             renderSearch();
         } else if (current == null) {
-            title.setText(label("Twitch の拡張設定", "Twitch enhancements"));
+            title.setText(label("パッチの設定", "Patch settings"));
             renderCategoryList();
         } else {
             title.setText(current.title);
@@ -326,7 +365,7 @@ public final class SettingsScreen extends Dialog implements Catalog.Env {
     private void renderRail() {
         rail.removeAllViews();
         Context context = getContext();
-        TextView heading = ui.text(context, label("Twitch の拡張設定", "Twitch enhancements"), 13,
+        TextView heading = ui.text(context, label("パッチの設定", "Patch settings"), 13,
                 ui.secondary, true);
         heading.setPadding(Ui.dp(context, 12), Ui.dp(context, 8), 0, Ui.dp(context, 8));
         rail.addView(heading);

@@ -14,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import io.github.sabopura.morphe.extension.twitch.ads.AdBlock;
 import io.github.sabopura.morphe.extension.twitch.chat.ChatHistory;
 import io.github.sabopura.morphe.extension.twitch.chat.ChatSettings;
 import io.github.sabopura.morphe.extension.twitch.chat.PublicApi;
@@ -53,6 +54,7 @@ public final class PlayerMenu {
     };
 
     private PlayerMenu(Context context) {
+        Text.use(context);
         this.context = context;
         boolean side = Ui.landscape(context);
         dialog = new Dialog(context);
@@ -111,8 +113,18 @@ public final class PlayerMenu {
             panel.addView(handle, lp);
         }
 
+        // Title with the settings right beside it, so they are found without scrolling.
+        LinearLayout header = new LinearLayout(context);
+        header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = ui.text(context, label("プレイヤーメニュー", "Player menu"), 20, ui.text, true);
-        panel.addView(title);
+        header.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        TextView settings = ui.button(context, label("⚙ 設定", "⚙ Settings"), false, () -> {
+            dialog.dismiss();
+            SettingsScreen.show(context);
+        });
+        settings.setContentDescription(label("パッチの設定を開く", "Open the patch settings"));
+        header.addView(settings, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        panel.addView(header, Ui.matchWidth());
         if (Features.danmaku()) {
             TextView hint = ui.text(context, label("ボタンの長押しで弾幕をすぐ切り替えられます",
                     "Long-press the button to switch danmaku instantly"), 13, ui.secondary, false);
@@ -120,6 +132,7 @@ public final class PlayerMenu {
             panel.addView(hint);
         }
 
+        if (Features.ads()) addAds();
         if (Features.danmaku()) addDanmaku();
         if (Features.player()) {
             addSpeed();
@@ -140,6 +153,24 @@ public final class PlayerMenu {
         TextView label = ui.sectionLabel(context, text);
         label.setPadding(0, Ui.dp(context, 20), 0, Ui.dp(context, 8));
         panel.addView(label);
+    }
+
+    private void addAds() {
+        section(label("広告ブロック", "Ad blocking"));
+        SharedPreferences prefs = AdBlock.preferences(context);
+        boolean on = prefs.getBoolean(AdBlock.KEY_ENABLED, true);
+        int stopped = AdBlock.count(AdBlock.REQUESTS, true) + AdBlock.count(AdBlock.REPLACED, true)
+                + AdBlock.count(AdBlock.COVERED, true);
+        String summary = on
+                ? label("この起動中に止めた広告 " + stopped + " 件", stopped + " ads stopped since the app started")
+                : label("オフ", "Off");
+        LinearLayout card = ui.card(context);
+        card.setBackground(Ui.rounded(context, 0x14FFFFFF, 16));
+        card.addView(ui.switchRow(context, label("広告をブロック", "Block ads"), summary, on, checked -> {
+            prefs.edit().putBoolean(AdBlock.KEY_ENABLED, checked).apply();
+            fill();
+        }), Ui.matchWidth());
+        panel.addView(card, Ui.matchWidth());
     }
 
     private void addDanmaku() {

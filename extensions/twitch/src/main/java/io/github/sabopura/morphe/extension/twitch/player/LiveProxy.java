@@ -52,6 +52,19 @@ public final class LiveProxy {
         }
     }
 
+    /** The usher URL that a proxied playlist URL replaced, or null. */
+    public static String originalOf(String url) {
+        Uri original = lastOriginal, routed = lastRouted;
+        return original != null && routed != null && routed != original && url.equals(routed.toString())
+                ? original.toString() : null;
+    }
+
+    /** The proxy's playlist URL for a channel, in the same form as {@link #rewrite}, or null. */
+    public static String proxyUrl(String base, String channel) {
+        if (base == null || !validBase(base) || channel == null || !channel.matches("[A-Za-z0-9_]{1,25}")) return null;
+        return base + channel + "?allow_source=true&allow_audio_only=true&fast_bread=true&type=any&player=twitchweb";
+    }
+
     public static boolean validBase(String base) {
         try {
             java.net.URI u = new java.net.URI(base);

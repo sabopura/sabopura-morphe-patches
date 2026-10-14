@@ -30,6 +30,7 @@ public final class PlayerTools {
     private PlayerTools() {}
 
     public static void initialize(Context context) {
+        Text.use(context);
         if (context != null) {
             app = context.getApplicationContext();
             ViewCustomization.initialize(context);

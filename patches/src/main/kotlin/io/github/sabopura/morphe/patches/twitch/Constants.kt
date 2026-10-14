@@ -29,4 +29,24 @@ internal object Constants {
             ),
         ),
     )
+
+    /** Ad blocking is analysed and hooked for this version only. */
+    val TWITCH_31_5_2 = Compatibility(
+        name = "Twitch",
+        packageName = "tv.twitch.android.app",
+        description = "Official Twitch Android app. Ad blocking is built for this version only.",
+        apkFileType = ApkFileType.APKS,
+        appIconColor = 0x9146FF,
+        signatures = setOf(
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53",
+        ),
+        targets = listOf(
+            AppTarget(
+                version = "31.5.2",
+                versionCode = 3105026,
+                minSdk = 32,
+                description = "Android 12L+ variant.",
+            ),
+        ),
+    )
 }

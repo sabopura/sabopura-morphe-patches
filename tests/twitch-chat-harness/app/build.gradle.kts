@@ -11,6 +11,7 @@ android {
         versionName = "1"
     }
     sourceSets["main"].java.srcDir("../../../extensions/twitch/src/main/java")
+    sourceSets["main"].java.srcDir("../../../extensions/twitch/ivs-stubs")
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

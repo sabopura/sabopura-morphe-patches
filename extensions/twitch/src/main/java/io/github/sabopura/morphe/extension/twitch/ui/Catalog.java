@@ -15,6 +15,7 @@ import io.github.sabopura.morphe.extension.twitch.chat.UserSearch;
 import io.github.sabopura.morphe.extension.twitch.chat.ViewCustomization;
 import io.github.sabopura.morphe.extension.twitch.danmaku.DanmakuSettings;
 import io.github.sabopura.morphe.extension.twitch.danmaku.TwitchDanmaku;
+import io.github.sabopura.morphe.extension.twitch.ads.AdBlock;
 import io.github.sabopura.morphe.extension.twitch.player.LiveProxy;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ final class Catalog {
     static final String ABOUT = "about";
     private static final String PROJECT_URL = "https://github.com/sabopura/sabopura-morphe-patches";
 
-    enum Store { CHAT, DANMAKU }
+    enum Store { CHAT, DANMAKU, ADS }
 
     static final class Category {
         final String id;
@@ -298,6 +299,7 @@ final class Catalog {
 
     static List<Category> build() {
         List<Category> categories = new ArrayList<>();
+        if (Features.ads()) categories.add(ads());
         if (Features.danmaku()) categories.add(danmaku());
         if (Features.chat()) {
             categories.add(chat());
@@ -319,6 +321,39 @@ final class Catalog {
 
     private static Ui.Format suffix(String unit) {
         return value -> value + unit;
+    }
+
+    private static Category ads() {
+        Category c = new Category("ads", label("広告ブロック", "Ad blocking"),
+                label("動画広告・配信の広告・表示広告・配信プロキシ", "Video, stream and display ads, stream proxy"));
+        c.group(label("広告ブロック", "Ad blocking"))
+                .note(label("広告が配信に入ったときだけ、Twitch から広告のない再生リストを取り直して差し替えます。下の配信プロキシを設定しない限り、外部のサーバーは使いません。",
+                        "When an ad is stitched into a stream, the same stream is fetched again from Twitch without it. No third-party server is used unless you set the stream proxy below."))
+                .add(new SwitchItem(AdBlock.KEY_ENABLED, label("広告をブロック", "Block ads"), true).store(Store.ADS)
+                        .summary(label("再生前・途中・VOD の広告、配信に入る広告、バナーなどの表示広告を止めます。新しく開いた画面から反映します",
+                                "Pre-rolls, mid-rolls, VOD ads, stream ads and banners. Applies to newly opened screens")))
+                .add(new ChoiceItem(AdBlock.KEY_FALLBACK, label("差し替えられなかった広告", "Ads that cannot be replaced"),
+                        new String[]{label("黒い画面で隠して消音", "Cover and mute"), label("そのまま表示", "Show them")},
+                        new String[]{AdBlock.FALLBACK_COVER, AdBlock.FALLBACK_SHOW}, AdBlock.FALLBACK_COVER)
+                        .store(Store.ADS).dependsOn(AdBlock.KEY_ENABLED)
+                        .summary(label("サブスク限定の配信などで、広告のない再生リストを取得できなかったとき",
+                                "For example on subscriber-only streams, when no ad-free playlist is available")));
+        c.group(label("配信プロキシ", "Stream proxy"))
+                .note(Features.player()
+                        ? label("ライブ配信のプレイリスト取得先を変えます。広告のない再生リストを Twitch から取得できなかったときの予備にも使います。プロキシには視聴チャンネルとIPアドレスが伝わります。再読み込み後に反映します。",
+                                "Changes where live playlists are fetched, and is the backup when no ad-free playlist is available from Twitch. The proxy sees the channel and your IP address. Applies after reloading.")
+                        : label("広告のない再生リストを Twitch から取得できなかったときの予備に使います。プロキシには視聴チャンネルとIPアドレスが伝わります。",
+                                "The backup when no ad-free playlist is available from Twitch. The proxy sees the channel and your IP address."))
+                .add(new ProxyItem());
+        String issue = AdBlock.lastIssue();
+        c.group(label("この起動中の記録", "Since the app started"))
+                .note(label("止めた広告の要求 " + AdBlock.count(AdBlock.REQUESTS, true) + " 件・差し替え " + AdBlock.count(AdBlock.REPLACED, true)
+                                + " 回・隠した広告 " + AdBlock.count(AdBlock.COVERED, true) + " 回"
+                                + (issue.isEmpty() ? "" : "\n最後に差し替えられなかった理由: " + issue),
+                        "Ad requests stopped: " + AdBlock.count(AdBlock.REQUESTS, true) + " · replaced: " + AdBlock.count(AdBlock.REPLACED, true)
+                                + " · covered: " + AdBlock.count(AdBlock.COVERED, true)
+                                + (issue.isEmpty() ? "" : "\n" + label("最後に差し替えられなかった理由: ", "Last reason an ad was not replaced: ") + issue)));
+        return c;
     }
 
     private static Category danmaku() {
@@ -454,7 +489,8 @@ final class Catalog {
 
     private static Category playback() {
         Category c = new Category("playback", label("再生", "Playback"),
-                label("シーク幅・ジェスチャー・配信プロキシ", "Seek steps, gestures, stream proxy"));
+                Features.ads() ? label("シーク幅・ジェスチャー", "Seek steps, gestures")
+                        : label("シーク幅・ジェスチャー・配信プロキシ", "Seek steps, gestures, stream proxy"));
         String sec = label(" 秒", " s");
         c.group(label("シーク", "Seek"))
                 .add(new SliderItem("forward_seek", label("進む秒数", "Seek forward"), 5, 120, 30, suffix(sec)))
@@ -462,10 +498,13 @@ final class Catalog {
         c.group(label("ジェスチャー", "Gestures"))
                 .add(new SwitchItem("brightness_gesture", label("左端の上下スワイプで明るさ", "Swipe left edge for brightness"), false))
                 .add(new SwitchItem("volume_gesture", label("右端の上下スワイプで音量", "Swipe right edge for volume"), false));
-        c.group(label("配信プロキシ", "Stream proxy"))
-                .note(label("ライブ配信のプレイリスト取得先を変えます。広告が必ず消えるとは限りません。プロキシには視聴チャンネルとIPアドレスが伝わります。再読み込み後に反映します。",
-                        "Changes where live playlists are fetched. Ads are not always removed. The proxy sees the channel and your IP address. Applies after reloading."))
-                .add(new ProxyItem());
+        if (!Features.ads()) {
+            // With Block ads applied, the proxy lives in the ad blocking settings.
+            c.group(label("配信プロキシ", "Stream proxy"))
+                    .note(label("ライブ配信のプレイリスト取得先を変えます。広告が必ず消えるとは限りません。プロキシには視聴チャンネルとIPアドレスが伝わります。再読み込み後に反映します。",
+                            "Changes where live playlists are fetched. Ads are not always removed. The proxy sees the channel and your IP address. Applies after reloading."))
+                    .add(new ProxyItem());
+        }
         return c;
     }
 
@@ -613,7 +652,7 @@ final class Catalog {
                         .summary(label("この画面の設定だけを戻します。履歴やVODの同期は残ります",
                                 "Only settings on this screen; history and VOD offsets stay")));
         c.group(label("情報", "Information"))
-                .add(new ActionItem("Sabopura Morphe Patches", env -> {
+                .add(new ActionItem(label("パッチの公開ページ", "Project page"), env -> {
                     try {
                         env.context().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(PROJECT_URL))
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -633,12 +672,14 @@ final class Catalog {
                 null, label("戻す", "Reset"), () -> {
                     SharedPreferences.Editor chat = env.prefs(Store.CHAT).edit();
                     SharedPreferences.Editor danmaku = env.prefs(Store.DANMAKU).edit();
+                    SharedPreferences.Editor ads = env.prefs(Store.ADS).edit();
                     for (Category category : categories)
                         for (Group group : category.groups)
                             for (Item item : group.items)
-                                item.reset(item.store == Store.DANMAKU ? danmaku : chat);
+                                item.reset(item.store == Store.DANMAKU ? danmaku : item.store == Store.ADS ? ads : chat);
                     chat.apply();
                     danmaku.apply();
+                    ads.apply();
                     env.changed(Store.CHAT);
                     env.changed(Store.DANMAKU);
                     env.rebuild();
