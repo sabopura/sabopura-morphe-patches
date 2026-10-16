@@ -102,8 +102,12 @@ public final class TwitchDanmaku {
         VIEWS.remove(view);
     }
 
-    /** Applies changed settings to every player. */
+    /** Applies changed settings to every player; the views are only touched on the main thread. */
     public static void settingsChanged() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            MAIN.post(TwitchDanmaku::settingsChanged);
+            return;
+        }
         for (DanmakuOverlayView view : new ArrayList<>(VIEWS)) view.settingsChanged();
     }
 

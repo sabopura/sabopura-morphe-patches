@@ -14,13 +14,15 @@ import java.net.URLClassLoader
 import java.util.jar.Manifest
 
 fun main() {
+    // The newest bundle: bundles of earlier versions stay in build/libs, and the list's version
+    // comes from the bundle's manifest.
     val patchFiles = setOf(
         File("build/libs/").listFiles { file ->
             val fileName = file.name
             !fileName.contains("javadoc") &&
                     !fileName.contains("sources") &&
                     fileName.endsWith(".mpp")
-        }!!.first()
+        }!!.maxBy { it.lastModified() }
     )
     val loadedPatches = loadPatchesFromJar(patchFiles)
     val patchClassLoader = URLClassLoader(patchFiles.map { it.toURI().toURL() }.toTypedArray())

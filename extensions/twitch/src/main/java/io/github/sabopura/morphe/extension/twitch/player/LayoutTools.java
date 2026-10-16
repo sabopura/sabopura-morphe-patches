@@ -7,7 +7,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Size;
 import android.view.View;
-import android.view.ViewParent;
 
 import io.github.sabopura.morphe.extension.twitch.chat.ChatSettings;
 
@@ -33,6 +32,35 @@ public final class LayoutTools {
                         original == 50 ? 50 : 30),
                 10,
                 70);
+    }
+
+    private static int guideline = -1;
+
+    /**
+     * Twitch's live theatre places the landscape chat with a guideline that ConstraintSet sets to
+     * a share of the width for the video: 0.7 (0.8 on tablets) beside the chat, 0.5 for the
+     * split layout, 1.0 without chat. Called with every guideline percent Twitch sets.
+     */
+    public static float guidePercent(float percent, int id) {
+        try {
+            android.content.Context c = PlayerTools.app();
+            if (c == null) return percent;
+            if (guideline == -1)
+                guideline = c.getResources().getIdentifier("chat_guideline", "id", c.getPackageName());
+            if (guideline == 0 || id != guideline) return percent;
+            SharedPreferences p = ChatSettings.preferences(c);
+            if (!p.getBoolean("landscape_width_enabled", false)) return percent;
+            if (Math.abs(percent - .5f) < .01f)
+                return 1 - clamp(p.getInt("landscape_split_width", 50), 10, 70) / 100f;
+            if (Math.abs(percent - .7f) < .01f || Math.abs(percent - .8f) < .01f)
+                return 1 - clamp(p.getInt("landscape_width", 30), 10, 70) / 100f;
+        } catch (RuntimeException ignored) {
+        }
+        return percent;
+    }
+
+    public static float guidePercent(int id, float percent) {
+        return guidePercent(percent, id);
     }
 
     public static Size miniSize(View view, Size original) {
@@ -93,46 +121,21 @@ public final class LayoutTools {
                         && root.getResources().getConfiguration().orientation
                                 == Configuration.ORIENTATION_LANDSCAPE;
         if (!enabled && BACKGROUNDS.isEmpty()) return;
-        int color =
-                Color.argb(
-                        Math.round(clamp(p.getInt("landscape_opacity", 30), 0, 100) * 2.55f),
-                        0,
-                        0,
-                        0);
-        for (String name :
-                new String[] {
-                    "landscape_chat_container",
-                    "chat_view_delegate_root",
-                    "main_chomments_container"
-                }) {
-            int id =
-                    root.getResources()
-                            .getIdentifier(name, "id", root.getContext().getPackageName());
-            if (id == 0) continue;
-            View view = root.findViewById(id);
-            if (view == null) continue;
-            boolean landscape = false;
-            for (View at = view; at != null; ) {
-                if (hasId(at, "landscape_chat_container")) {
-                    landscape = true;
-                    break;
-                }
-                ViewParent parent = at.getParent();
-                at = parent instanceof View ? (View) parent : null;
-            }
-            if (enabled && landscape) {
-                Background saved = BACKGROUNDS.get(view);
-                if (saved == null) {
-                    saved = new Background(view.getBackground());
-                    BACKGROUNDS.put(view, saved);
-                }
-                Drawable current = view.getBackground();
-                if (!(current instanceof ColorDrawable)
-                        || ((ColorDrawable) current).getColor() != color)
-                    view.setBackground(new ColorDrawable(color));
-            } else {
-                Background saved = BACKGROUNDS.remove(view);
-                if (saved != null) view.setBackground(saved.original);
+        int alpha = Math.round(clamp(p.getInt("landscape_opacity", 30), 0, 100) * 2.55f);
+        // The chat column: landscape_chat_container in the VOD/clip theatre, chat_wrapper in the
+        // live one. It alone gets the colour; the chat inside is made clear so the two do not
+        // stack into a darker shade than the one chosen.
+        for (String name : new String[] {"landscape_chat_container", "chat_wrapper"}) {
+            View column = find(root, name);
+            if (column == null) continue;
+            // Keep Twitch's own shade (dark or light theme) and change only how see-through it is.
+            Background saved = BACKGROUNDS.get(column);
+            Drawable original = saved != null ? saved.original : column.getBackground();
+            int base = original instanceof ColorDrawable ? ((ColorDrawable) original).getColor() : Color.BLACK;
+            paint(column, enabled, (alpha << 24) | (base & 0xFFFFFF));
+            for (String inner : new String[] {"chat_view_delegate_root", "main_chomments_container"}) {
+                View view = find(column, inner);
+                if (view != null) paint(view, enabled, Color.TRANSPARENT);
             }
         }
     }
@@ -173,10 +176,23 @@ public final class LayoutTools {
                 saved.hidden = false;
             }
             boolean visible = nav.getVisibility() == View.VISIBLE;
-            nav.setTranslationY(visible ? saved.navY - nav.getTop() : saved.navY);
+            // Twitch pads the screen below the status bar; the bar goes right under it.
+            nav.setTranslationY(visible ? saved.navY + parent.getPaddingTop() - nav.getTop() : saved.navY);
             body.setTranslationY(saved.bodyY + (visible ? nav.getHeight() : 0));
             if (rating != null)
                 rating.setTranslationY(saved.ratingY + (visible ? nav.getHeight() : 0));
+        }
+    }
+
+    private static void paint(View view, boolean enabled, int color) {
+        if (enabled) {
+            if (!BACKGROUNDS.containsKey(view)) BACKGROUNDS.put(view, new Background(view.getBackground()));
+            Drawable current = view.getBackground();
+            if (!(current instanceof ColorDrawable) || ((ColorDrawable) current).getColor() != color)
+                view.setBackground(new ColorDrawable(color));
+        } else {
+            Background saved = BACKGROUNDS.remove(view);
+            if (saved != null) view.setBackground(saved.original);
         }
     }
 

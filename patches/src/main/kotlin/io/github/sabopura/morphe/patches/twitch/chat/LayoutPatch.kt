@@ -9,6 +9,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import io.github.sabopura.morphe.patches.twitch.support.classesMatching
+import io.github.sabopura.morphe.patches.twitch.support.classesWithStrings
 import io.github.sabopura.morphe.patches.twitch.support.uniqueContract
 
 private object LandscapeConfig : Fingerprint(strings = listOf("LandscapeChatConfiguration(chatOverlayingPlayerOff=false)"))
@@ -29,6 +30,21 @@ internal val layoutPatch = bytecodePatch {
         val ref=refs.singleOrNull() ?: throw PatchException("Layout: native percentage-width helper is not unique")
         val helper=mutableClassDefBy(ref.definingClass).methods.single { it.name==ref.name && it.parameterTypes==ref.parameterTypes && it.returnType==ref.returnType }
         helper.addInstructions(0,widthHook(helper))
+        // The live theatre sizes its landscape chat with a guideline that ConstraintSet sets.
+        val constraintSet=classesWithStrings("All children of ConstraintLayout must have ids to use ConstraintSet")
+            .uniqueContract("ConstraintSet")
+        fun puts(m:com.android.tools.smali.dexlib2.iface.Method,type:String)=m.implementation?.instructions?.count {
+            it.opcode==Opcode.IPUT && ((it as? ReferenceInstruction)?.reference as? com.android.tools.smali.dexlib2.iface.reference.FieldReference)?.type==type
+        } ?: 0
+        val percent=constraintSet.methods.filter { m -> m.returnType=="V" &&
+            m.parameterTypes.map { it.toString() }.sorted()==listOf("F","I") && puts(m,"F")==1 && puts(m,"I")==2
+        }.uniqueContract("ConstraintSet guideline percent setter")
+        val setter=mutableClassDefBy(constraintSet).methods.single { it.name==percent.name && it.parameterTypes==percent.parameterTypes && it.returnType=="V" }
+        val floatFirst=setter.parameterTypes[0].toString()=="F"
+        setter.addInstructions(0,"""
+            invoke-static/range {p1 .. p2}, Lio/github/sabopura/morphe/extension/twitch/player/LayoutTools;->guidePercent(${if(floatFirst) "FI" else "IF"})F
+            move-result ${if(floatFirst) "p1" else "p2"}
+        """)
         val mini=mutableClassDefBy("Ltv/twitch/android/shared/ui/elements/draggable/ConstraintTheatreContainerView;")
             .methods.singleOrNull { it.parameterTypes.size==2 && it.parameterTypes.first()=="Ltv/twitch/android/util/Size;" && it.returnType=="V" }
             ?:throw PatchException("Layout: mini-player size entry point missing")

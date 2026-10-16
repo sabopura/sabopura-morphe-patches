@@ -6,7 +6,7 @@ class SignProbe {
         if(!store.isFile()) throw new IllegalArgumentException("Existing test signing store is required");
         app.morphe.engine.util.KeystoreSignerKt.signWithLegacyFallback(
             new ApkUtils.KeyStoreDetails(store,null,"Morphe","Morphe"),true,
-            java.util.logging.Logger.getLogger("AdsProbe"),details -> {
+            java.util.logging.Logger.getLogger("DeviceProbe"),details -> {
                 ApkUtils.INSTANCE.signApk(new File(args[0]),new File(args[1]),"Morphe",details);
                 return kotlin.Unit.INSTANCE;
             });

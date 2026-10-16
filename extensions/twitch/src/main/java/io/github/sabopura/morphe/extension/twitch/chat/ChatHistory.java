@@ -202,7 +202,7 @@ public final class ChatHistory {
 
                     public void afterTextChanged(Editable e) {}
                 });
-        AlertDialog dialog =
+        AlertDialog.Builder builder =
                 new AlertDialog.Builder(context)
                         .setTitle(
                                 recent
@@ -210,14 +210,11 @@ public final class ChatHistory {
                                         : Text.label(
                                                 "表示したメッセージの履歴", "Viewed message history"))
                         .setView(box)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .setNeutralButton(
-                                recent
-                                        ? Text.label(
-                                                "取得元: robotty.de", "Source: robotty.de")
-                                        : Text.label("履歴を削除", "Clear history"),
-                                null)
-                        .create();
+                        .setPositiveButton(android.R.string.ok, null);
+        // A neutral button closes the dialog unless it gets its own listener, so only the
+        // history has one; the source of recent chat is named in the status line instead.
+        if (!recent) builder.setNeutralButton(Text.label("履歴を削除", "Clear history"), null);
+        AlertDialog dialog = builder.create();
         dialog.show();
         if (!recent) {
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
@@ -279,8 +276,9 @@ public final class ChatHistory {
                                     source.addAll(messages);
                                     filter.run();
                                     status.setText(
-                                            Text.label("公開履歴: ", "Public history: ")
-                                                    + messages.size());
+                                            Text.label(
+                                                    "公開履歴 " + messages.size() + " 件（robotty.de）",
+                                                    "Public history: " + messages.size() + " (robotty.de)"));
                                 });
                     } catch (Exception e) {
                         PublicApi.UI.post(

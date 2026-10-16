@@ -1,6 +1,6 @@
 # Twitch の互換性保守
 
-対応済みとして表示するのは **30.7.2 / 3007026** と **31.5.2 / 3105026（minSdk 32）** です。照合を改善したことは、
+対応済みとして表示するのは **30.7.2 / 3007026**、**31.5.2 / 3105026（minSdk 32）**、**31.6.0 / 3106006（minSdk 32）** です。照合を改善したことは、
 未検証の将来版がそのまま動くという意味ではありません。
 
 ## 今回の照合方式
@@ -13,6 +13,8 @@
 | Following | 見出しのsectionフィールドと、セクションから行番号を作るループを照合 | 旧版のsubmit入口と新版のインライン化された処理に対応。見出し位置マップと差分計算の両方より前でリストを絞る |
 | 通知 | Firebase 接続生成をSDKのヘッダー名と型で限定。実際のヘッダーキー引数をレジスター間で追跡 | 「文字列の後の最初のヘッダー呼出し」という仮定を除去。jumbo・move・invoke-range を扱い、分岐合流で不明な値は使わない。元の値のレジスターを上書きせず呼出しだけ差し替え |
 | ログイン | setup begin/success/failure の3つの文字列、単一引数、Object戻り値、対象メソッドが実際に読むKotlin Unit参照を照合 | 複数のKotlin同梱コピーがあっても元のUnitを特定する。一意性と処理の形を検証し、nullではなく元のUnitを返す。パッチは `default=false` |
+| フォロー解除のハート | プレイヤー下のボタン一覧は toString `Visible(buttons=` と `, onNotificationSettingSelected=` の状態クラス。項目は toString（`UnfollowIconButton`）で見分ける | コンストラクタの先頭で一覧を拡張に渡し、ハートだけを除く。横画面のチャット上部（もう1つの `Visible(buttons=`）は、Twitch がフォロー中のチャンネルに `FollowButton` を入れない（`!isFollowing && canFollow` のときだけ）ので手を加えない。`DeclutterProbe` がこの前提も確認する |
+| ハイライトの種類 | `AddHighlightRequested(highlightId=` を作り `AddCommunityHighlight(model=` を判定する合成ラムダの、イベントを型変換して `Boolean.valueOf` を返す case | case の先頭で拡張に問い合わせ、止めるときだけ FALSE を返す。分岐先のラベルはフックへ移す。追加だけを止め、削除は必ず通す |
 
 `BytecodeContracts.kt` に共通の一意性判定とヘッダー追跡を分離しています。
 候補が0件でも複数でも、パッチ名・条件を含むエラーで失敗させます。
@@ -40,6 +42,9 @@ PackageManager の署名取得、Twitchログイン、他ドメインの通信�
    ネイティブのチャット行を実際にbind・描画し、投稿者IDあり／nullを両方通す。
    `LayoutProbe.java`の手順は`tests/twitch-compatibility/README.md`を参照。
    クラス列挙や起動だけでは、初回メソッド呼び出し時のVerifyErrorを検出できない。
+   `tests/twitch-compatibility/live-smoke.sh` で、実際のライブ配信を未ログインで開き、
+   再生中に固まらないこと（on / off / full）と、プレイヤーの端のスワイプを確かめる。
+   部品を組み立てる検証だけでは、配信画面の下にある画面や、実際のイベントの流れが抜ける。
    旧版でも回帰確認を行う。ポイントの元処理は命令・分岐先・例外範囲を原本と比較する。
    チャットの戻り箇所数は固定せず原本との一致で検証する。
 5. ログイン後に、宝箱の出現・1回だけの受取・チャンネル移動・失敗時の挙動、
@@ -77,8 +82,8 @@ MPPは最後の `buildAndroid` で確定します。通常構成は `Fix login` 
 
 1. `VerifyAdsDex.java` で、書き換え箇所の数と `Single.just` の橋渡しを確認する。
    `java -cp <morphe-desktop-all.jar> tests/twitch-compatibility/VerifyAdsDex.java <patched.apk>`
-2. `ads-probe/` の計測用 APK を、パッチ済みアプリと同じ鍵で署名して入れ、Twitch のプロセス内で実行する。
-   `adb shell am instrument -w io.github.sabopura.adsprobe/io.github.sabopura.adsprobe.AdsProbe`
+2. `device-probe/` の計測用 APK を、パッチ済みアプリと同じ鍵で署名して入れ、Twitch のプロセス内で実行する。
+   `adb shell am instrument -w io.github.sabopura.deviceprobe/io.github.sabopura.deviceprobe.AdsProbe`
    実際の配信の再生前広告が差し替わること（Web の `site` トークンで約半数のチャンネルに入る）、
    広告サーバー API が通信しないこと、広告イベントの処理を確認する。`RESULT failed=0` を確認する。
 3. ログインした実機で、配信と VOD を開き、`adb logcat -s SabopuraTwitch` で各層のログを確認する（エミュレーターでは未確認）。

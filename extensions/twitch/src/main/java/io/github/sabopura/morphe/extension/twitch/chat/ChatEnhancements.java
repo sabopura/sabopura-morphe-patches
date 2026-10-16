@@ -5,6 +5,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Log;
 import android.util.TypedValue;
@@ -138,8 +139,7 @@ public final class ChatEnhancements {
                 text.getContext(),
                 new HistoryMessage(
                         id, effectiveRoom, username, row.original.toString(), timestamp, userId));
-        row.repeat =
-                REPEATS.isRepeat(effectiveRoom, userId, id, row.original.toString(), timestamp);
+        row.repeat = REPEATS.isRepeat(effectiveRoom, userId, id, row.body, timestamp);
         ROWS.put(text, row);
         apply(text, row);
     }
@@ -154,7 +154,7 @@ public final class ChatEnhancements {
         text.setText(row.original, TextView.BufferType.SPANNABLE);
         text.setTextSize(TypedValue.COMPLEX_UNIT_PX, row.fontPx);
         if (!settings.enabled) return;
-        if (settings.rules.blocks(row.original.toString(), row.username, row.userId)
+        if (settings.rules.blocks(row.body, row.username, row.userId)
                 || (settings.repeats && row.repeat)) {
             row.hide();
             return;
@@ -166,11 +166,9 @@ public final class ChatEnhancements {
                     0,
                     decorated.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if (prefs.getBoolean("show_login", false)
-                && row.username != null
-                && !row.username.isEmpty()) decorated.insert(0, "@" + row.username + " · ");
+        if (prefs.getBoolean("show_login", false)) showLogin(decorated, row.username);
         ChatMetadata.decorate(text, decorated, row.username, row.userId);
-        if (settings.rules.highlights(row.original.toString())) {
+        if (settings.rules.highlights(row.body)) {
             decorated.setSpan(
                     new BackgroundColorSpan(
                             prefs.getInt("highlight_color", Color.argb(100, 145, 70, 255))),
@@ -211,6 +209,21 @@ public final class ChatEnhancements {
         if (settings.sevenTv || settings.bttv || settings.ffz) EmoteSupport.bind(text, row.room);
     }
 
+    /** "表示名 (login)" when the display name is not just the login in another case. */
+    static void showLogin(SpannableStringBuilder text, String login) {
+        if (login == null || !login.matches("[A-Za-z0-9_]{1,25}")) return;
+        String plain = text.toString();
+        int split = plain.indexOf(": ");
+        if (split <= 0
+                || plain.substring(0, split).toLowerCase(Locale.ROOT)
+                        .contains(login.toLowerCase(Locale.ROOT))) return;
+        String shown = " (" + login + ")";
+        text.insert(split, shown);
+        text.setSpan(new RelativeSizeSpan(.85f), split, split + shown.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new ForegroundColorSpan(0xFFADADB8), split, split + shown.length(),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
     public static void refresh() {
         for (Map.Entry<TextView, Row> entry : new ArrayList<>(ROWS.entrySet())) {
             TextView text = entry.getKey();
@@ -221,6 +234,8 @@ public final class ChatEnhancements {
 
     private static final class Row {
         final SpannedString original;
+        /** The message without the sender, for word rules and repeats. */
+        final String body;
         final WeakReference<View> item;
         final float fontPx;
         final String room, username, userId;
@@ -232,6 +247,7 @@ public final class ChatEnhancements {
 
         Row(TextView text, View view, String room, String username, String userId, long timestamp) {
             original = SpannedString.valueOf(text.getText());
+            body = ChatRules.body(original.toString());
             item = new WeakReference<>(view);
             fontPx = text.getTextSize();
             this.room = room;

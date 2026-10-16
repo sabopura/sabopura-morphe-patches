@@ -108,8 +108,54 @@ class VerifyTwitchDex {
         }
         require(loginMethods == 1, "single attestation setup");
         System.out.println("LOGIN optionalEnabled=" + loginExpected);
+        // Hide options: Twitch's chat highlight filter asks the extension about additions right
+        // after its cast, returns FALSE for a dropped event, and otherwise goes on with its own
+        // next instruction (never back into the hook, which would loop forever).
+        int highlightHooks = 0;
+        for (ClassDef cls : classes.values()) for (Method method : cls.getMethods()) {
+            if (method.getDefiningClass().startsWith(root) || method.getImplementation() == null) continue;
+            var code = new ArrayList<Instruction>();
+            method.getImplementation().getInstructions().forEach(code::add);
+            for (int i = 0; i < code.size(); i++) {
+                if (!(code.get(i) instanceof ReferenceInstruction r) || !r.getReference().toString().equals(
+                        root + "chat/ViewCustomization;->keepHighlight(Ljava/lang/Object;)Z")) continue;
+                require(i >= 5 && code.get(i - 5).getOpcode() == Opcode.CHECK_CAST
+                        && code.get(i - 4).getOpcode() == Opcode.INSTANCE_OF && code.get(i - 3).getOpcode() == Opcode.IF_NEZ
+                        && code.get(i - 2).getOpcode() == Opcode.INSTANCE_OF && code.get(i - 1).getOpcode() == Opcode.IF_EQZ
+                        && code.get(i + 1).getOpcode() == Opcode.MOVE_RESULT && code.get(i + 2).getOpcode() == Opcode.IF_NEZ
+                        && code.get(i + 3).getOpcode() == Opcode.SGET_OBJECT && code.get(i + 4).getOpcode() == Opcode.RETURN_OBJECT,
+                        "highlight filter hook shape");
+                require(target(code, i - 3) == i && target(code, i - 1) == i + 5 && target(code, i + 2) == i + 5,
+                        "highlight filter hook continues with Twitch's code (" + target(code, i - 3) + ", "
+                                + target(code, i - 1) + ", " + target(code, i + 2) + " for " + i + ")");
+                require(code.stream().anyMatch(x -> x instanceof ReferenceInstruction v
+                        && v.getReference().toString().equals("Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;")), "hook sits in the filter");
+                highlightHooks++;
+            }
+        }
+        require(highlightHooks == 1, "one community highlight filter hook");
+        System.out.println("HIGHLIGHTS filterHooks=" + highlightHooks);
+        // Hide the unfollow heart: the player's button list goes through the extension first.
+        int buttonHooks = 0;
+        for (ClassDef cls : classes.values()) for (Method method : cls.getMethods()) {
+            if (!method.getName().equals("<init>") || method.getImplementation() == null) continue;
+            Instruction first = method.getImplementation().getInstructions().iterator().next();
+            if (first instanceof ReferenceInstruction r && r.getReference().toString().equals(
+                    root + "chat/ViewCustomization;->metadataButtons(Ljava/util/List;)V")) buttonHooks++;
+        }
+        require(buttonHooks == 1, "one player button list hook");
+        System.out.println("BUTTONS listHooks=" + buttonHooks);
         System.out.println("PASS dexFiles=" + dex.getDexEntryNames().size() + " classes=" + classes.size() + " bridges=" + bridges);
     }
+    /** The index a branch at [index] jumps to. */
+    static int target(List<Instruction> code, int index) {
+        int[] offsets = new int[code.size()];
+        for (int i = 1; i < code.size(); i++) offsets[i] = offsets[i - 1] + code.get(i - 1).getCodeUnits();
+        int to = offsets[index] + ((OffsetInstruction) code.get(index)).getCodeOffset();
+        for (int i = 0; i < code.size(); i++) if (offsets[i] == to) return i;
+        return -1;
+    }
+
     static List<Instruction> code(Method method) {
         var result = new ArrayList<Instruction>();
         method.getImplementation().getInstructions().forEach(result::add);

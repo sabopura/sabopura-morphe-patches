@@ -21,6 +21,12 @@ internal object Constants {
                 minSdk = 26,
                 description = "Verified on API 36: launches, no ad SDK initialization. Logged-in ad slots not yet checked.",
             ),
+            AppTarget(
+                version = "6.200.0",
+                versionCode = 68905,
+                minSdk = 26,
+                description = "Verified on API 36: launches, no ad SDK initialization (the unpatched app logs AppLovin and Pangle). Logged-in ad slots not yet checked.",
+            ),
         ),
     )
 }

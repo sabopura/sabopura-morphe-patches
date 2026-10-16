@@ -8,6 +8,7 @@ public final class ChatSettings {
     public final int fontPercent;
     public final ChatRules rules;
     private static volatile ChatSettings cached;
+    private static volatile Context app;
 
     private ChatSettings(SharedPreferences p) {
         enabled = p.getBoolean("enabled", true);
@@ -25,8 +26,14 @@ public final class ChatSettings {
     }
 
     public static SharedPreferences preferences(Context context) {
-        return context.getApplicationContext()
-                .getSharedPreferences("sabopura_chat", Context.MODE_PRIVATE);
+        app = context.getApplicationContext();
+        return app.getSharedPreferences("sabopura_chat", Context.MODE_PRIVATE);
+    }
+
+    /** For callers without a Context; null until any screen has read the settings. */
+    public static SharedPreferences preferences() {
+        Context context = app;
+        return context == null ? null : preferences(context);
     }
 
     public static ChatSettings get(Context context) {

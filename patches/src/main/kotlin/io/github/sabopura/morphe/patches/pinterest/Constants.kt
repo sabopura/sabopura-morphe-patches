@@ -33,6 +33,12 @@ internal object Constants {
                 minSdk = 29,
                 description = "Patched and launched on the dedicated API 36 emulator; the feed needs sign-in and was not checked.",
             ),
+            AppTarget(
+                version = "14.40.0",
+                versionCode = 14408010,
+                minSdk = 29,
+                description = "Patched, launched on the dedicated API 36 emulator and the is_promoted getter checked in the output DEX; the feed needs sign-in and was not checked.",
+            ),
         ),
     )
 }

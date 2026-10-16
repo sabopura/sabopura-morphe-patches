@@ -24,7 +24,6 @@ public final class LiveProxy {
             String base = p == null ? "" : p.getString("live_proxy", "");
             if (!"usher.ttvnw.net".equals(original.getHost())
                     || !original.getPath().contains("/channel/hls/")) return original;
-            PlayerTools.onLive();
             lastOriginal = original;
             if (base.isEmpty()) {
                 lastRouted = original;

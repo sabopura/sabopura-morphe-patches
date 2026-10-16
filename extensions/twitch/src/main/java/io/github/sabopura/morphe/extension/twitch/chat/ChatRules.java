@@ -49,6 +49,16 @@ public final class ChatRules {
         return result;
     }
 
+    /**
+     * The message of a rendered chat row ("badges Name: message"), so word rules do not match
+     * the sender's name. Rows without a name, such as notices, are used whole.
+     */
+    public static String body(String row) {
+        if (row == null) return "";
+        int split = row.indexOf(": ");
+        return split < 0 ? row : row.substring(split + 2);
+    }
+
     static String normalize(String text) {
         return Normalizer.normalize(text == null ? "" : text, Normalizer.Form.NFKC)
                 .toLowerCase(Locale.ROOT)

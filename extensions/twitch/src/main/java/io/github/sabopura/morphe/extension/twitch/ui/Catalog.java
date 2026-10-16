@@ -621,8 +621,13 @@ final class Catalog {
                 label("使わないボタンや欄を隠す", "Hide buttons and panels you do not use"));
         Group group = c.group(label("隠す項目", "Hide"))
                 .note(label("オフに戻すと元の表示に戻ります。", "Turning an item off restores it."));
-        for (String[] option : ViewCustomization.OPTIONS)
-            group.add(new SwitchItem(option[0], label(option[1] + "を隠す", "Hide " + option[2]), false));
+        for (String[] option : ViewCustomization.OPTIONS) {
+            Item item = new SwitchItem(option[0], label(option[1] + "を隠す", "Hide " + option[2]), false);
+            if (option[0].equals("hide_unfollow"))
+                item.summary(label("フォロー中のチャンネルでは、配信画面のハート（押すとフォロー解除）を出しません。検索結果とストーリーの解除ボタンも隠します",
+                        "On followed channels the heart under the player (one tap unfollows) is not shown, nor the unfollow buttons in search and stories"));
+            group.add(item);
+        }
         return c;
     }
 

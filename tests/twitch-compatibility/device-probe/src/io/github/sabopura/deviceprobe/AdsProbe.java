@@ -1,4 +1,4 @@
-package io.github.sabopura.adsprobe;
+package io.github.sabopura.deviceprobe;
 
 import android.app.Instrumentation;
 import android.content.Context;

@@ -108,31 +108,11 @@ public final class ChatMetadata {
                 && login != null
                 && login.matches("[A-Za-z0-9_]{1,25}")) {
             @SuppressWarnings("unchecked")
-            Map<String, String> labels =
-                    (Map<String, String>)
-                            cached(
-                                    "pronoun-types",
-                                    () ->
-                                            parsePronouns(
-                                                    new JSONArray(
-                                                            PublicApi.get(
-                                                                    "https://pronouns.alejo.io/api/pronouns"))));
-            String key =
-                    (String)
-                            cached(
-                                    "pronoun:" + login.toLowerCase(Locale.ROOT),
-                                    () -> {
-                                        JSONArray a =
-                                                new JSONArray(
-                                                        PublicApi.get(
-                                                                "https://pronouns.alejo.io/api/users/"
-                                                                        + login.toLowerCase(
-                                                                                Locale.ROOT)));
-                                        return a.length() == 0
-                                                ? ""
-                                                : a.getJSONObject(0).optString("pronoun_id", "");
-                                    });
-            String label = labels == null ? null : labels.get(key);
+            Map<String, Pronoun> kinds =
+                    (Map<String, Pronoun>) cached("pronoun-types", ChatMetadata::pronounKinds);
+            String user = login.toLowerCase(Locale.ROOT);
+            String[] chosen = (String[]) cached("pronoun:" + user, () -> pronounsOf(user));
+            String label = kinds == null || chosen == null ? null : pronounLabel(kinds, chosen[0], chosen[1]);
             if (label != null && !label.isEmpty()) prefix(text, "[" + label + "] ");
         }
     }
@@ -163,6 +143,64 @@ public final class ChatMetadata {
                 0,
                 value.length(),
                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    /** Alejo's current API, or the older one it replaced if that is all that answers. */
+    private static Map<String, Pronoun> pronounKinds() throws Exception {
+        try {
+            return parsePronounKinds(new JSONObject(PublicApi.get("https://api.pronouns.alejo.io/v1/pronouns")));
+        } catch (Exception current) {
+            Map<String, Pronoun> kinds = new HashMap<>();
+            for (Map.Entry<String, String> e : parsePronouns(new JSONArray(
+                    PublicApi.get("https://pronouns.alejo.io/api/pronouns"))).entrySet())
+                kinds.put(e.getKey(), new Pronoun(e.getValue(), "", true));
+            return kinds;
+        }
+    }
+
+    /** {main, alternative}; empty strings when the user has none. */
+    private static String[] pronounsOf(String login) throws Exception {
+        try {
+            JSONObject o = new JSONObject(PublicApi.get("https://api.pronouns.alejo.io/v1/users/" + login));
+            return new String[] {o.optString("pronoun_id", ""),
+                    o.isNull("alt_pronoun_id") ? "" : o.optString("alt_pronoun_id", "")};
+        } catch (java.io.IOException e) {
+            if ("HTTP 404".equals(e.getMessage())) return new String[] {"", ""};
+            JSONArray a = new JSONArray(PublicApi.get("https://pronouns.alejo.io/api/users/" + login));
+            return new String[] {a.length() == 0 ? "" : a.getJSONObject(0).optString("pronoun_id", ""), ""};
+        }
+    }
+
+    public static Map<String, Pronoun> parsePronounKinds(JSONObject all) {
+        Map<String, Pronoun> kinds = new HashMap<>();
+        for (Iterator<String> keys = all.keys(); keys.hasNext(); ) {
+            JSONObject o = all.optJSONObject(keys.next());
+            if (o == null) continue;
+            String subject = o.optString("subject"), object = o.optString("object");
+            if (subject.isEmpty() || subject.length() > 40 || object.length() > 40) continue;
+            kinds.put(o.optString("name"), new Pronoun(subject, object, o.optBoolean("singular")));
+        }
+        return kinds;
+    }
+
+    /** "He/Him", "Any", or "She/They" when a second set is chosen, as Alejo's own extension shows. */
+    public static String pronounLabel(Map<String, Pronoun> kinds, String main, String alternative) {
+        Pronoun first = main == null ? null : kinds.get(main);
+        if (first == null) return null;
+        Pronoun second = alternative == null || alternative.isEmpty() ? null : kinds.get(alternative);
+        if (second != null) return first.subject + "/" + second.subject;
+        return first.singular || first.object.isEmpty() ? first.subject : first.subject + "/" + first.object;
+    }
+
+    public static final class Pronoun {
+        final String subject, object;
+        final boolean singular;
+
+        Pronoun(String subject, String object, boolean singular) {
+            this.subject = subject;
+            this.object = object;
+            this.singular = singular;
+        }
     }
 
     public static Map<String, String> parsePronouns(JSONArray a) {

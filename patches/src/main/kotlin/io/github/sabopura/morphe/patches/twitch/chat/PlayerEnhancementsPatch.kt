@@ -39,6 +39,12 @@ val playerEnhancementsPatch=bytecodePatch(
             core.methods.single { it.name==name && it.parameterTypes.isEmpty() }.addInstructions(0,
                 "invoke-static/range {p0 .. p0}, $PLAYER->$hook(Ljava/lang/Object;)V")
         }
+        // Every way Twitch loads content: a URL, a clip manifest, or a preloaded source.
+        val sources=setOf("Lcom/amazonaws/ivs/player/MediaPlayer\$LoadOptions;","Ljava/lang/String;","Lcom/amazonaws/ivs/player/Source;")
+        val loads=core.methods.filter { it.name in setOf("load","loadClipManifest","loadSource") &&
+            it.implementation!=null && it.parameterTypes.size in 1..2 && it.parameterTypes[0].toString() in sources }
+        if(loads.none { it.name=="load" }) throw PatchException("Player enhancements: IVS load entry point missing")
+        loads.forEach { it.addInstructions(0,"invoke-static/range {p0 .. p1}, $PLAYER->onLoad(Ljava/lang/Object;Ljava/lang/Object;)V") }
         val comments=mutableClassDefBy(VodComments.originalClassDef)
         val fetch=comments.methods.single { it.parameterTypes.map { p->p.toString() }==listOf("I","Ljava/lang/String;") && it.returnType.startsWith("Lio/reactivex/") }
         fetch.addInstructions(0,"""
@@ -58,7 +64,7 @@ val playerEnhancementsPatch=bytecodePatch(
                 move-result-object v$r
             """)
         }
-        Logger.getLogger("Sabopura.Player").info("Player enhancements: app init, IVS play/release, VOD setup/offset, ${returns.size} manifest hook(s)")
+        Logger.getLogger("Sabopura.Player").info("Player enhancements: app init, IVS play/release, ${loads.size} IVS load hook(s), VOD setup/offset, ${returns.size} manifest hook(s)")
     }
     finalize {
         enableTwitchFeature("playerPatch")

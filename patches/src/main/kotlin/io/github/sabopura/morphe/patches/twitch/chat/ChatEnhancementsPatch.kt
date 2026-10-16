@@ -49,7 +49,7 @@ val chatEnhancementsPatch = bytecodePatch(
     default = true,
 ) {
     compatibleWith(TWITCH_SUPPORTED)
-    dependsOn(chatEnhancementsResources, vodChatPatch, playerMenuResourcePatch)
+    dependsOn(chatEnhancementsResources, vodChatPatch, playerMenuResourcePatch, highlightFilterPatch, unfollowButtonPatch)
     extendWith("extensions/twitch.mpe")
     val fields = linkedMapOf<String, FieldReference>()
 

@@ -21,8 +21,8 @@ feed, weather, and crash-log checks pass.
 Weather config resolves the getter's return type against the stable
 `AdsInWeatherConfig$Companion` and its public, typed `default()` factory.
 The 26.9.11 repair preserves the disabled default from 26.8.50. Emulator smoke
-tests require populated article lists before and after scrolling. 26.10.10 applied
-without changes: the public feed showed no sponsored or ad markers before or after
+tests require populated article lists before and after scrolling. 26.10.10 and
+26.10.20 applied without changes: the public feed showed no sponsored or ad markers before or after
 scrolling on the API 36 emulator, with no fatal errors in the process log.
 
 ## Reddit
@@ -130,7 +130,7 @@ video is paused or buffering and between sparse comments.
 
 Verification: for every added YouTube version a public replay is opened on the API 36
 emulator and the danmaku overlay must attach, fetch comments and draw them. 21.40.165
-passed this check. The emulator build needs a test-only startup shim that is applied
+and 21.40.166 passed this check. The emulator build needs a test-only startup shim that is applied
 after patching and never enters the MPP.
 
 ## Pinterest
@@ -153,10 +153,10 @@ patches fail to apply. The rewrites use stable anchors instead:
   analytics, attribution, ads-measurement and tracking task tags
   (`TAG_APPSFLYER_INIT`, `TAG_TRACKING_REQUESTS`, ...), found through the tag enum.
 
-14.11.0, 14.38.0 and 14.39.0 were patched, installed and launched to the sign-in
-screen on the API 36 emulator without crashes; for 14.11.0 and 14.38.0 the patched
-methods were also checked by decompiling the output. Feed behaviour after login was
-not verified.
+14.11.0, 14.38.0, 14.39.0 and 14.40.0 were patched, installed and launched to the
+sign-in screen on the API 36 emulator without crashes; for 14.11.0, 14.38.0 and 14.40.0
+the patched methods were also checked by decompiling the output (in 14.40.0 the
+`is_promoted` getter returns `false`). Feed behaviour after login was not verified.
 
 ## pixiv
 
@@ -176,7 +176,9 @@ not verified.
 6.199.0 was patched, decompiled to check the four modified methods, installed
 and launched on the API 36 emulator without crashes. The unpatched app logs
 AppLovin, Mintegral, Pangle and Google ads activity at launch; the patched app
-logged none. Ad slots after login were not verified.
+logged none. 6.200.0 applied without changes; the unpatched app again logged AppLovin
+and Pangle at launch on the API 36 emulator and the patched app logged none, with no
+fatal errors. Ad slots after login were not verified.
 
 ## Google News
 

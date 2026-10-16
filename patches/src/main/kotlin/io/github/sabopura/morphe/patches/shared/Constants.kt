@@ -50,6 +50,12 @@ object Constants {
                 versionCodes = SupportedAbi.entries.associateWith { 1001144 },
                 description = "Ad-free public feed and scrolling verified on the dedicated Android API 36 emulator.",
             ),
+            AppTarget(
+                version = "26.10.20",
+                versionCodes = SupportedAbi.entries.associateWith { 1001145 },
+                minSdk = 28,
+                description = "Ad-free public feed and scrolling verified on the dedicated Android API 36 emulator.",
+            ),
         ),
     )
 }

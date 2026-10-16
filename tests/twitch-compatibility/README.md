@@ -15,8 +15,8 @@ patches; additionally select `Fix login` for the second build. Do not use
 JSON has zero failed patches and all steps succeeded; process exit code alone
 does not establish patch success.
 
-Run this pair for every declared target (currently 30.7.2 / 3007026 and
-31.5.2 / 3105026). This verifier checks actual DEX wiring, field accessibility,
+Run this pair for every declared target (currently 30.7.2 / 3007026, 31.5.2 / 3105026
+and 31.6.0 / 3106006). This verifier checks actual DEX wiring, field accessibility,
 native claim submission, original chat-return coverage, intact chat arguments,
 nullable author ID conversion, channel ID conversion, width argument ordering,
 optional login selection, and the exact native eligibility body retained in the
@@ -59,6 +59,50 @@ Object at a shared return. Reflection-based class loading, package compilation,
 and application startup had passed. These are therefore insufficient regression
 checks. `VerifyTwitchDex.java` now also checks the null branch targets an explicit
 zero and that the converted String has a separate return path.
+
+## Device probe
+
+`device-probe/` is an instrumentation APK (`io.github.sabopura.deviceprobe`) that runs inside the
+patched Twitch process. Compile its sources against the Android SDK, run D8, link the manifest
+with aapt2, and sign it with `SignProbe.java` and the same local signer as the patched target.
+Each probe prints `PASS`/`FAIL` lines and ends with `RESULT failed=0` when everything holds.
+
+```powershell
+adb -s emulator-5554 shell am instrument -w io.github.sabopura.deviceprobe/io.github.sabopura.deviceprobe.<Probe>
+```
+
+| Probe | Versions | What it exercises |
+| --- | --- | --- |
+| `AdsProbe` | 31.5.2 | Block ads layers, a real stitched pre-roll replaced through the wrapped IVS HTTP client |
+| `GestureProbe` | all | Twitch's real theatre views (drag container, theatre layout, patched player root, controls) over a Twitch activity; injected swipes and taps for brightness, volume, chat scrolling inside the theatre, a scrolling list underneath the theatre (it must not take the swipe), the mini player and brightness restore |
+| `SpeedProbe` | all | Twitch's IVS player on a real live stream and VOD: the audible player is chosen over a newer muted preview, VOD speed, live catch-up back to 1x, the reset on another VOD |
+| `NavProbe` | all | Twitch's home frame (`viewer_landing`) with Twitch's insets; navigation bar default, top and hidden |
+| `LandscapeProbe` | all | The live theatre's landscape layout with Twitch's ConstraintSet: chat width and background. Pass `-e set el9 -e percent r` on 30.7.2 and `-e set w9a -e percent s` on 31.6.0 (defaults are the 31.5.2 names `s9a`/`s`) |
+| `ChatProbe` | 31.5.2 | Real native chat rows bound with each chat setting (fixture names as in `LayoutProbe`) |
+| `DanmakuProbe` | 31.5.2 | Twitch's parsed live chat message objects fed to the danmaku layer in the real player layout |
+| `DeclutterProbe` | all (unfollow part 31.5.2 / 30.7.2, highlight part 31.5.2) | Each "Hide" option against the layouts where Twitch shows the view (the home feed's stories shelf and button included); bottom bar tabs leave no gap; the unfollow heart leaves the button list under the player, and Twitch's own chat header builder still puts Follow only on channels not followed; hype trains and pinned messages dropped in Twitch's own highlight filter, while polls, removals and everything with the options off go on (each call must come back within 3 s), and no event is turned into text |
+
+Live playback needs network access from the emulator; they use only public, anonymous playback
+tokens. The probes restore the settings they change.
+
+## A real live stream
+
+The probes build parts of Twitch's screens; `live-smoke.sh` opens the real theatre instead. It
+starts Twitch without an account on the root-capable test emulator (Twitch's own logged-out
+home, enabled through its `logged_out_experiment_variant` experiment), opens one of the most
+watched live streams (one without content classification labels: those open behind an "intended
+for certain audiences" screen instead of playing), and checks for 40 s that there is no ANR or
+crash, that the main thread is not spinning or stuck in patch code, and that the chat keeps moving.
+
+```sh
+ANDROID_SERIAL=emulator-5554 tests/twitch-compatibility/live-smoke.sh full 40 out/live
+```
+
+Run `on`, `off` and `full` (Hide options, plus swipes and danmaku) for both targets. In the
+`full` run, swipe the edges of the player as well (`adb shell input swipe 1000 650 1000 300 700`
+on a 1080-wide portrait screen) and check that `cmd media_session volume --stream 3 --get` and
+the window's `sbrt=` in `dumpsys window windows` change. A frozen theatre or a swipe taken by
+the screen underneath was only found this way; the probes alone passed.
 
 ## Player menu and settings screen
 

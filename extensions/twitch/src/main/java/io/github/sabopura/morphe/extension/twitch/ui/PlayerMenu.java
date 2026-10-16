@@ -13,6 +13,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import io.github.sabopura.morphe.extension.twitch.ads.AdBlock;
 import io.github.sabopura.morphe.extension.twitch.chat.ChatHistory;
@@ -207,7 +208,14 @@ public final class PlayerMenu {
         for (float value : RATES) {
             boolean selected = available && Math.abs(value - rate) < 0.01f;
             TextView chip = ui.chip(context, format(value), selected, () -> {
-                PlayerTools.run(context, () -> PlayerTools.playbackRate(value));
+                PlayerTools.run(context, () -> {
+                    int result = PlayerTools.speed(value);
+                    if (result == PlayerTools.SPEED_AT_LIVE_EDGE)
+                        toast(label("配信の最新の位置を再生中のため、これより速くできません",
+                                "Already at the live edge, so it cannot play faster"));
+                    else if (result == PlayerTools.SPEED_CATCHING_UP)
+                        toast(label("遅れを取り戻したら 1× に戻ります", "Returns to 1× once caught up"));
+                });
                 fill();
             });
             chip.setEnabled(available);
@@ -215,7 +223,19 @@ public final class PlayerMenu {
             chips.add(chip);
         }
         panel.addView(ui.chipStrip(context, chips.toArray(new View[0])), Ui.matchWidth());
-        if (!available) note(label("再生中の動画がないため変更できません", "No active video"));
+        if (!available) {
+            note(label("再生中の動画がないため変更できません", "No active video"));
+        } else if (Boolean.TRUE.equals(PlayerTools.live())) {
+            long delay = PlayerTools.liveDelay();
+            String behind = String.format(Locale.ROOT, "%.1f", delay / 1000f);
+            note(label("ライブ配信は最新の位置より先へ進めません。1× より速くすると、遅れを取り戻したあと自動で 1× に戻ります",
+                    "A live stream cannot run ahead of the broadcast. Faster than 1× makes up the delay, then returns to 1×")
+                    + (delay <= 0 ? "" : label("（今の遅れ " + behind + " 秒）", " (now " + behind + " s behind)")));
+        }
+    }
+
+    private void toast(String text) {
+        Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
     }
 
     private void addSleep() {
@@ -254,10 +274,13 @@ public final class PlayerMenu {
         SharedPreferences prefs = ChatSettings.preferences(context);
         int back = prefs.getInt("rewind_seek", 10), forward = prefs.getInt("forward_seek", 30);
         List<View> tiles = new ArrayList<>();
-        tiles.add(ui.tile(context, label(back + "秒戻る", "Back " + back + " s"),
-                () -> PlayerTools.relativeSeek(context, false)));
-        tiles.add(ui.tile(context, label(forward + "秒進む", "Forward " + forward + " s"),
-                () -> PlayerTools.relativeSeek(context, true)));
+        // A live stream has no timeline to move along.
+        if (!Boolean.TRUE.equals(PlayerTools.live())) {
+            tiles.add(ui.tile(context, label(back + "秒戻る", "Back " + back + " s"),
+                    () -> PlayerTools.relativeSeek(context, false)));
+            tiles.add(ui.tile(context, label(forward + "秒進む", "Forward " + forward + " s"),
+                    () -> PlayerTools.relativeSeek(context, true)));
+        }
         tiles.add(ui.tile(context, label("再読み込み", "Reload"), () -> {
             dialog.dismiss();
             PlayerTools.reload(context);
