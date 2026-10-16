@@ -7,7 +7,7 @@
 1. Morphe Manager に Sabopura Morphe Patches を追加します（[README](../README.md) の導入方法）。
 2. 公式 Twitch の APK / APKS / APKM / XAPK を選びます。改造済みの APK は使わないでください。
 3. 次のパッチを選んで適用します。
-   - `Block ads`（31.5.2 のみ）、`Chat enhancements`、`Player enhancements`、`Show deleted messages`
+   - `Block ads`（31.5.2・31.6.0）、`Chat enhancements`、`Player enhancements`、`Show deleted messages`
    - `Danmaku chat`、`Auto claim channel points`、`Fix notifications`
    - `Fix login` は初期状態では選ばれていません。「このアプリ／OSはサポートされていません」と出てログインできない場合だけ選んでください。
 4. できた APK をインストールします。すでにパッチ版を入れている場合は、同じ署名鍵で更新してください。
@@ -87,7 +87,7 @@ Twitch のプロフィール・チャプター取得では、固定の公開 Cli
 
 - 外部サービスの停止・仕様変更・未登録により、バッジや履歴が表示されないことがあります。
   復旧待ちの問い合わせには再試行間隔とキュー上限を設けています。
-- 広告ブロックは Twitch 31.5.2 専用です。配信に埋め込まれた広告の差し替えは、Twitch が広告のない
+- 広告ブロックは Twitch 31.5.2・31.6.0 専用です。配信に埋め込まれた広告の差し替えは、Twitch が広告のない
   視聴形式を用意している間だけ働きます。サブスク限定の配信などで取得できないときは、黒い画面と消音になります。
 - 広告ブロックの切り替えは、次に開いた画面から反映します。
 - ポイント自動回収はアプリが受け取った宝箱だけが対象です。バックグラウンドでの

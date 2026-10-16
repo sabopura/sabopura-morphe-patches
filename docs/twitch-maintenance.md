@@ -64,7 +64,7 @@ MPPは最後の `buildAndroid` で確定します。通常構成は `Fix login` 
 
 ## 広告ブロック（Block ads）
 
-31.5.2 の解析にもとづく。照合は難読化名ではなく、次の目印で行う。どれか 1 つでも見つからなければパッチ全体を失敗させる。
+31.5.2 の解析にもとづく（31.6.0 も同じ目印で当たり、同じ検証に合格）。照合は難読化名ではなく、次の目印で行う。どれか 1 つでも見つからなければパッチ全体を失敗させる。
 
 | 層 | 目印 | 動作 |
 | --- | --- | --- |
@@ -72,7 +72,7 @@ MPPは最後の `buildAndroid` で確定します。通常構成は `Fix login` 
 | ② 広告サーバー API | Retrofit `create`（文字列 `API declarations must be interfaces.`）の `Proxy.newProxyInstance` の結果。`AdEdgeApi`（名前が残る） | 通信せずに失敗の `Result` を返す。`Single.just` は `io.reactivex.u` の `item is null` を持つ静的メソッド |
 | ② 応答の解析 | 文字列 `failed to parse display ad response: ` と `(Result, Z)` の引数 | 先頭で「広告なし」のシングルトンを返す |
 | ③ React Native | `NetworkingModule.sendRequestInternalReal`、`AdMetadataCueRouter.route`（名前が残る） | `edge.ads.twitch.tv` に 204 で応答、MAF と PbyP のキューを捨てる |
-| ④ 埋め込み広告 | `com.amazonaws.ivs.net.HttpClientFactory.create`（SDK の公開クラス）。`ReadCallback`/`StreamConsumer` を public にする | 広告入りの再生リストを、匿名の別トークン（`mobile_feed` → `embed` → `popout` → `autoplay`）の同じ画質の再生リストに差し替え |
+| ④ 埋め込み広告 | `com.amazonaws.ivs.net.HttpClientFactory.create`（SDK の公開クラス）。`ReadCallback`/`StreamConsumer` を public にする | 広告入りの再生リストを、匿名の別トークン（`mobile_feed` → 配信プロキシ（設定した場合）→ `autoplay`）の再生リストに差し替え。`autoplay` だけは画質が下がる |
 | ⑤ PbyP | 文字列 `processStateChange(Ltv/twitch/android/feature/pbyp/PbypPresenter$State;…` のクラスの `()Z` | false |
 | ⑥ 広告イベント | `OnSurestreamAdStarted(` などの toString を持つイベントと、その根の型だけを引数に取るメソッド（IVS と ExoPlayer の 2 つ） | 差し替えられなかった広告を黒い画面と消音で隠す |
 

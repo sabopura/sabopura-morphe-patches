@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.15.3",
+  "version": "1.15.4",
   "patches": [
     {
       "name": "Ambient light",
@@ -330,13 +330,25 @@
         {
           "packageName": "tv.twitch.android.app",
           "name": "Twitch",
-          "description": "Official Twitch Android app. Ad blocking is built for this version only.",
+          "description": "Official Twitch Android app. Ad blocking is built for these versions only.",
           "apkFileType": "APKS",
           "appIconColor": "#9146FF",
           "signatures": [
             "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
           ],
           "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": {
+                "ARM64_V8A": 3106006,
+                "ARMEABI_V7A": 3106006,
+                "X86_64": 3106006,
+                "X86": 3106006
+              },
+              "isExperimental": false,
+              "minSdk": 32,
+              "description": "Android 12L+ variant."
+            },
             {
               "version": "31.5.2",
               "versionCodes": {

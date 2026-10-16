@@ -73,7 +73,7 @@ adb -s emulator-5554 shell am instrument -w io.github.sabopura.deviceprobe/io.gi
 
 | Probe | Versions | What it exercises |
 | --- | --- | --- |
-| `AdsProbe` | 31.5.2 | Block ads layers, a real stitched pre-roll replaced through the wrapped IVS HTTP client |
+| `AdsProbe` | 31.5.2 / 31.6.0 | Block ads layers, a real stitched pre-roll replaced through the wrapped IVS HTTP client |
 | `GestureProbe` | all | Twitch's real theatre views (drag container, theatre layout, patched player root, controls) over a Twitch activity; injected swipes and taps for brightness, volume, chat scrolling inside the theatre, a scrolling list underneath the theatre (it must not take the swipe), the mini player and brightness restore |
 | `SpeedProbe` | all | Twitch's IVS player on a real live stream and VOD: the audible player is chosen over a newer muted preview, VOD speed, live catch-up back to 1x, the reset on another VOD |
 | `NavProbe` | all | Twitch's home frame (`viewer_landing`) with Twitch's insets; navigation bar default, top and hidden |

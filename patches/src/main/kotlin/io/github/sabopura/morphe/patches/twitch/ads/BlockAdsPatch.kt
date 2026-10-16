@@ -20,7 +20,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
-import io.github.sabopura.morphe.patches.twitch.Constants.TWITCH_31_5_2
+import io.github.sabopura.morphe.patches.twitch.Constants.TWITCH_ADS
 import io.github.sabopura.morphe.patches.twitch.support.classesMatching
 import io.github.sabopura.morphe.patches.twitch.support.classesWithStrings
 import io.github.sabopura.morphe.patches.twitch.support.uniqueContract
@@ -64,7 +64,7 @@ val blockAdsPatch = bytecodePatch(
         "picture-by-picture ads and banner or feed ads, without a third-party server. Can be " +
         "switched off in the settings.",
 ) {
-    compatibleWith(TWITCH_31_5_2)
+    compatibleWith(TWITCH_ADS)
     dependsOn(playerMenuResourcePatch, blockAdsResourcePatch)
     extendWith("extensions/twitch.mpe")
 
