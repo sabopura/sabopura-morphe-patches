@@ -25,6 +25,69 @@ tests require populated article lists before and after scrolling. 26.10.10 and
 26.10.20 applied without changes: the public feed showed no sponsored or ad markers before or after
 scrolling on the API 36 emulator, with no fatal errors in the process log.
 
+SmartNews ships two signed builds of the same version. The universal APK (version
+codes `100xxxx`, Uptodown) is signed with `40f82012…bf5c700`; the Google Play split
+build (version codes `1xxx`, APKMirror APKM with a Google Play source stamp) is signed
+with `867abbf0…6d744883`. Their dex files differ. For 26.10.10 and 26.10.20 both builds were patched
+without `--force` and checked on the API 36 emulator (the Play build is ARM64-only, so on
+an x86_64 image with ARM translation): the unpatched Play builds showed `Ad ·` feed
+items, the patched builds showed none, and the process logs had no fatal errors. Other
+versions keep the single version code that was verified until the other build is checked.
+
+### Auto claim mission rewards
+
+The My missions page (`https://tour.smartnews.com/campaign/`, the Points tab) is a web
+app in SmartNews' SNClient bridge WebView. The patch hooks the bridge class, found by its
+`@JavascriptInterface postMessageWithId(String, String, String)` method and its WebView
+attach method that calls `addJavascriptInterface`, and injects a script into that page
+only.
+
+Background (option `claim_in_background`, default on): five seconds after the main
+screen resumes (at most every 5 minutes, and every 10 minutes while it stays open), the
+same `MissionsLandingPageFragment` the Points tab uses is added to a 1 x 1 transparent
+container in the main activity, so the app's own bridge and sign-in apply. The AndroidX
+fragment calls are obfuscated, so the patch copies the transaction factory, add and commit
+calls from the Points tab's own transaction around `MissionsLandingPageFragment.newInstance`
+and finds the remove call by AndroidX's "Cannot remove Fragment attached to a different
+FragmentManager" message. The container id is chosen so that `findViewById` cannot match
+any existing view. The page is removed when the script reports that it is done, after 90
+seconds, or when the activity stops. A toast shows the points claimed and any lottery result.
+
+Primary path: when the page renders its reward popup (`data-pixel-id`
+`sn-point-mission-complete-popup`), the popup is hidden and its claim buttons
+(`mission-complete-popup-redeem-btn`) are clicked, so the page runs exactly what a manual
+tap runs and updates its balance and cards in place. Lottery buttons are clicked only for
+`LOTTERY` rewards (learned from the page's own campaign responses); the lottery dialog's
+fixed 3600 ms animation timer is shortened to zero, a losing result is drawn again when
+the page offers that (at most twice) and otherwise closed, and a winning result stays
+visible. With the `draw_lotteries` option off, or when the popup lists anything else, the
+popup stays visible.
+
+Fallback, a few seconds later and again when the page syncs progress or the tab becomes
+visible: `getAppInfo`, `stampRally:syncMissionsProgress`, the mission list through
+`stampRally:getCampaigns` (or `GET /api/missions/v1/campaigns` with the page's `rt`), then
+`POST /api/missions/v1/missions/redeem` for completed `POINTS`/`D_POINT` rewards the popup
+did not handle, and the lottery API (`result`, then `draw`) for `LOTTERY` rewards. Only
+this path reloads the page (at most every 30 seconds).
+
+Missions that need an action first (open a URL, watch an ad, link a d ACCOUNT, tap a push
+notification) are not completed by the patch; once the action is done their reward is
+claimed like any other. A toast summarises the result; failures are reported once per app
+session. `setprop log.tag.SabopuraMissions DEBUG` logs every bridge message and mission.
+
+26.9.20 and 26.10.10 were verified on API 36 emulators. For 1.15.5 the patch was also applied
+to 26.10.20 and to the Google Play APKMs of 26.10.10 and 26.10.20: on all of them the background
+page started, the bridge attached and the mission list loaded; after reading three articles and
+restarting the app, 26.10.20 (universal and Play) claimed the reading reward (1 point) in the
+background, with no fatal errors. In the background mode the
+Japanese edition, staying on Home, drew an article lottery (won) and claimed a 2-point
+reading reward within about 1.5 seconds of the page starting, with nothing shown on screen
+except the toast; leaving the app mid-run removed the page without errors. In the Japanese edition, signed
+out, the daily channel reward and an article-reading reward were credited and the
+article lottery was drawn twice through the page's own dialog within about 1.5 seconds of
+opening the Points tab, without the reward popup or the lottery animation being shown.
+Daily point rewards were also confirmed on a signed-in phone.
+
 ## Reddit
 
 `Auto-translate Reddit content` invokes Reddit's existing translation callbacks
@@ -45,7 +108,7 @@ on an Android API 36 emulator without an AndroidRuntime fatal crash. End-to-end
 translated content after account login was not verified, so this remains the
 main device-test item.
 
-Reddit `2026.37.0[2637051]` through `2026.41.0[2641021]`
+Reddit `2026.37.0[2637051]` through `2026.42.0[2642001]`
 passed the forced compatibility probe and a
 logged-out cold launch on the dedicated API 36 emulator. The public `/r/all`
 route led to onboarding and an authentication sheet; no guest route or public
@@ -129,8 +192,8 @@ it per frame, draws only the comments currently on screen, and stops its frame l
 video is paused or buffering and between sparse comments.
 
 Verification: for every added YouTube version a public replay is opened on the API 36
-emulator and the danmaku overlay must attach, fetch comments and draw them. 21.40.165
-and 21.40.166 passed this check. The emulator build needs a test-only startup shim that is applied
+emulator and the danmaku overlay must attach, fetch comments and draw them. 21.40.165,
+21.40.166, 21.41.526 and 21.41.529 passed this check. The emulator build needs a test-only startup shim that is applied
 after patching and never enters the MPP.
 
 ## Pinterest

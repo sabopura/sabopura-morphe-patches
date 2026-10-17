@@ -15,7 +15,10 @@ object Constants {
         apkFileType = ApkFileType.APK,
         appIconColor = 0x0C73C7,
         signatures = setOf(
+            // Universal APK (version codes 100xxxx, Uptodown).
             "40f82012f7b7512d011eb9678a59c194892c863657f43e7c171d181b6bf5c700",
+            // Google Play split build (version codes 1xxx, APKMirror APKM with Play source stamp).
+            "867abbf06837d164a35e376c2e16f08381346e7f916b029ac53a45c36d744883",
         ),
         targets = listOf(
             AppTarget(
@@ -47,15 +50,30 @@ object Constants {
             ),
             AppTarget(
                 version = "26.10.10",
-                versionCodes = SupportedAbi.entries.associateWith { 1001144 },
-                description = "Ad-free public feed and scrolling verified on the dedicated Android API 36 emulator.",
+                // Both the universal APK (1001144) and the Google Play build (1144) are verified.
+                versionCodes = null,
+                description = "Universal APK and Google Play APKM: ad-free public feed and scrolling verified " +
+                    "on the dedicated Android API 36 emulator.",
             ),
             AppTarget(
                 version = "26.10.20",
-                versionCodes = SupportedAbi.entries.associateWith { 1001145 },
+                // Both the universal APK (1001145) and the Google Play build (1145) are verified.
+                versionCodes = null,
                 minSdk = 28,
-                description = "Ad-free public feed and scrolling verified on the dedicated Android API 36 emulator.",
+                description = "Universal APK and Google Play APKM: ad-free public feed and scrolling verified " +
+                    "on the dedicated Android API 36 emulator.",
             ),
         ),
+    )
+
+    /** Versions on which the SNClient bridge hook of "Auto claim mission rewards" was verified. */
+    val SMARTNEWS_MISSIONS_COMPATIBILITY = Compatibility(
+        name = "SmartNews",
+        packageName = PACKAGE_NAME,
+        description = "SmartNews My missions auto-claim (26.9.20 and later)",
+        apkFileType = ApkFileType.APK,
+        appIconColor = 0x0C73C7,
+        signatures = SMARTNEWS_COMPATIBILITY.signatures,
+        targets = SMARTNEWS_COMPATIBILITY.targets.filter { it.version in setOf("26.9.20", "26.10.10", "26.10.20") },
     )
 }

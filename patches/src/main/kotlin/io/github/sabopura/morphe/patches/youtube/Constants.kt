@@ -51,6 +51,16 @@ internal object Constants {
                 minSdk = 29,
                 description = "Danmaku fetched and drawn over a public video and the see-through watch page shown on the dedicated Android API 36 emulator.",
             ),
+            AppTarget(
+                version = "21.41.526",
+                minSdk = 29,
+                description = "Danmaku fetched and drawn over a public replay and the see-through watch page shown on the dedicated Android API 36 emulator.",
+            ),
+            AppTarget(
+                version = "21.41.529",
+                minSdk = 29,
+                description = "Danmaku fetched and drawn over a public replay and the see-through watch page shown on the dedicated Android API 36 emulator.",
+            ),
         ),
     )
 }

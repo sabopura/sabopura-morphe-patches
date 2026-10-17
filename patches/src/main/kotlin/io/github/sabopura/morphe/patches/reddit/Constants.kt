@@ -64,6 +64,12 @@ internal object Constants {
                 minSdk = 32,
                 description = "Patched and launched logged out on the dedicated Android API 36 emulator; the sign-in screen blocks public feeds.",
             ),
+            AppTarget(
+                version = "2026.42.0",
+                versionCode = 2642001,
+                minSdk = 32,
+                description = "Patched and launched logged out on the dedicated Android API 36 emulator; the sign-in screen blocks public feeds.",
+            ),
         ),
     )
 }
