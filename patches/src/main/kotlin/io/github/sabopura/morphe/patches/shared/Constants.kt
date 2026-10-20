@@ -63,6 +63,14 @@ object Constants {
                 description = "Universal APK and Google Play APKM: ad-free public feed and scrolling verified " +
                     "on the dedicated Android API 36 emulator.",
             ),
+            AppTarget(
+                version = "26.10.30",
+                // Both the universal APK (1001147) and the Google Play build (1147) are verified.
+                versionCodes = null,
+                minSdk = 28,
+                description = "Universal APK and Google Play APKM: ad-free public feed and scrolling verified " +
+                    "on the dedicated Android API 36 emulator.",
+            ),
         ),
     )
 
@@ -74,6 +82,6 @@ object Constants {
         apkFileType = ApkFileType.APK,
         appIconColor = 0x0C73C7,
         signatures = SMARTNEWS_COMPATIBILITY.signatures,
-        targets = SMARTNEWS_COMPATIBILITY.targets.filter { it.version in setOf("26.9.20", "26.10.10", "26.10.20") },
+        targets = SMARTNEWS_COMPATIBILITY.targets.filter { it.version in setOf("26.9.20", "26.10.10", "26.10.20", "26.10.30") },
     )
 }

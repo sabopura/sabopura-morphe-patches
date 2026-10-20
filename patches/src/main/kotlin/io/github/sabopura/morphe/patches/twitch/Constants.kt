@@ -16,6 +16,12 @@ internal object Constants {
         ),
         targets = listOf(
             AppTarget(
+                version = "31.7.0",
+                versionCode = 3107006,
+                minSdk = 32,
+                description = "Android 12L+ variant: patched and checked on the dedicated API 36 emulator. Signed-in behavior not tested.",
+            ),
+            AppTarget(
                 version = "31.6.0",
                 versionCode = 3106006,
                 minSdk = 32,
@@ -47,6 +53,12 @@ internal object Constants {
             "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53",
         ),
         targets = listOf(
+            AppTarget(
+                version = "31.7.0",
+                versionCode = 3107006,
+                minSdk = 32,
+                description = "Android 12L+ variant.",
+            ),
             AppTarget(
                 version = "31.6.0",
                 versionCode = 3106006,

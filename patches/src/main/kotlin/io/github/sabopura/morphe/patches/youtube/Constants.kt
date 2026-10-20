@@ -61,6 +61,11 @@ internal object Constants {
                 minSdk = 29,
                 description = "Danmaku fetched and drawn over a public replay and the see-through watch page shown on the dedicated Android API 36 emulator.",
             ),
+            AppTarget(
+                version = "21.42.243",
+                minSdk = 29,
+                description = "Media-time hook re-anchored on the progress constructor; danmaku fetched and drawn in sync with playback and the see-through watch page shown on the dedicated Android API 36 emulator.",
+            ),
         ),
     )
 }

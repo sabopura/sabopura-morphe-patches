@@ -59,7 +59,9 @@ internal val playerHooksPatch = bytecodePatch(
 
     execute {
         // Feed every feature YouTube's own media time callback for smooth synchronization.
-        PlayerControllerSetTimeReferenceFingerprint.instructionMatches
+        (PlayerControllerSetTimeReferenceFingerprint.matchOrNull()
+            ?: LegacyPlayerControllerSetTimeReferenceFingerprint.match())
+            .instructionMatches
             .first()
             .getMethodCalled()
             .addInstruction(

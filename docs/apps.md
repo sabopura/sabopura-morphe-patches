@@ -21,17 +21,17 @@ feed, weather, and crash-log checks pass.
 Weather config resolves the getter's return type against the stable
 `AdsInWeatherConfig$Companion` and its public, typed `default()` factory.
 The 26.9.11 repair preserves the disabled default from 26.8.50. Emulator smoke
-tests require populated article lists before and after scrolling. 26.10.10 and
-26.10.20 applied without changes: the public feed showed no sponsored or ad markers before or after
+tests require populated article lists before and after scrolling. 26.10.10,
+26.10.20 and 26.10.30 applied without changes: the public feed showed no sponsored or ad markers before or after
 scrolling on the API 36 emulator, with no fatal errors in the process log.
 
 SmartNews ships two signed builds of the same version. The universal APK (version
 codes `100xxxx`, Uptodown) is signed with `40f82012…bf5c700`; the Google Play split
 build (version codes `1xxx`, APKMirror APKM with a Google Play source stamp) is signed
-with `867abbf0…6d744883`. Their dex files differ. For 26.10.10 and 26.10.20 both builds were patched
+with `867abbf0…6d744883`. Their dex files differ. For 26.10.10, 26.10.20 and 26.10.30 both builds were patched
 without `--force` and checked on the API 36 emulator (the Play build is ARM64-only, so on
 an x86_64 image with ARM translation): the unpatched Play builds showed `Ad ·` feed
-items, the patched builds showed none, and the process logs had no fatal errors. Other
+items (for 26.10.30 the unpatched universal APK, `Ad · DirectMax`), the patched builds showed none, and the process logs had no fatal errors. Other
 versions keep the single version code that was verified until the other build is checked.
 
 ### Auto claim mission rewards
@@ -79,7 +79,9 @@ session. `setprop log.tag.SabopuraMissions DEBUG` logs every bridge message and 
 to 26.10.20 and to the Google Play APKMs of 26.10.10 and 26.10.20: on all of them the background
 page started, the bridge attached and the mission list loaded; after reading three articles and
 restarting the app, 26.10.20 (universal and Play) claimed the reading reward (1 point) in the
-background, with no fatal errors. In the background mode the
+background, with no fatal errors. On 26.10.30 (universal and Play) the background page started
+and its script ran on the emulator; the server refused the test device (`CLIENT_CONDITION_DISABLED`),
+so no reward was claimed there. In the background mode the
 Japanese edition, staying on Home, drew an article lottery (won) and claimed a 2-point
 reading reward within about 1.5 seconds of the page starting, with nothing shown on screen
 except the toast; leaving the app mid-run removed the page without errors. In the Japanese edition, signed
@@ -193,7 +195,7 @@ video is paused or buffering and between sparse comments.
 
 Verification: for every added YouTube version a public replay is opened on the API 36
 emulator and the danmaku overlay must attach, fetch comments and draw them. 21.40.165,
-21.40.166, 21.41.526 and 21.41.529 passed this check. The emulator build needs a test-only startup shim that is applied
+21.40.166, 21.41.526, 21.41.529 and 21.42.243 passed this check. The emulator build needs a test-only startup shim that is applied
 after patching and never enters the MPP.
 
 ## Pinterest
@@ -309,10 +311,10 @@ headers, string table) to find functions by name, rewrites their entry to
   `assets://index.android.bundle`, so previously downloaded OTA bundles are
   ignored too.
 
-4.26 and 4.27 (official APKs from `welcome.sankaku.app/app-download`) were
+4.26, 4.27 and 4.28 (official APKs from `welcome.sankaku.app/app-download`) were
 patched; a byte diff against the original bundle shows only the three function
 entries and the footer changed, the hermes-dec disassembly of the patched
 functions is as intended, and the patched native method returns the asset URL.
-4.27 was installed and launched on the API 36 emulator without fatal errors; the
-popup timing itself was not exercised.
+4.27 and 4.28 were installed and launched on the API 36 emulator without fatal errors
+(4.28 also past the welcome screen to Browse); the popup timing itself was not exercised.
 
