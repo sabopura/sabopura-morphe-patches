@@ -90,6 +90,79 @@ article lottery was drawn twice through the page's own dialog within about 1.5 s
 opening the Points tab, without the reward popup or the lottery animation being shown.
 Daily point rewards were also confirmed on a signed-in phone.
 
+### Open in external browser
+
+Off by default. Pages that SmartNews would show in its own web view open in another browser
+instead: as a Custom Tab of that browser (option `custom_tabs`, default on) or in the browser
+app itself, with `Browser.EXTRA_APPLICATION_ID` so that browsers reuse one tab. A browser
+without a Custom Tabs service always gets the browser-app intent, so it does not open inside
+SmartNews' task. Option `browser` is `default` or one or more package names separated by commas.
+The browser is the first installed one of that list, else the default browser app set in Android
+(which may also be a link-router app), else the first installed browser; the intent always names
+that package, so neither the system chooser nor an app that claims the link through app links
+opens instead. A list helps with browsers published under more than one package name. Only when
+no browser is installed does the page stay in SmartNews.
+
+Two places are hooked:
+
+- Article taps. Feeds, lists, search results and StandaloneArticleActivity (notifications, linked
+  articles) all open articles through one method of the obfuscated article presenter, found by
+  its `LegacyLinkMasterDetailFlowPresenter$Companion` field, the `(Context, request, boolean)`
+  shape and its "open article_view" trace. The hook reads the article's JSON model fields
+  (`LiteArticle.url`, `internalUrl`, `articleViewStyle`, `premium`) and returns early once the
+  article goes to a browser. `WEB` and `HYBRID` articles and articles without a style leave;
+  `SMART` and `SMART_VIDEO` articles stay in SmartView unless option `smart_view_articles` is on;
+  video, coupon, app, audio, premium and unknown styles always stay. HYBRID opens on its web tab
+  in ArticleContainer, the article screen these versions use; SmartNews' newer Compose reader
+  (behind a server flag, not seen in testing) would show it in SmartView instead. Like SmartNews,
+  `internalUrl` comes before `url`, so the browser loads the page SmartNews would have loaded
+  (observed differences are tracking parameters such as `from=smtnews`). When the presenter
+  runs in StandaloneArticleActivity, that activity's own close method (found by its `isTaskRoot`
+  and `finish` calls) runs before the browser starts: it would otherwise stay empty, and when it
+  is the task root it starts MainActivity, which must end up below the browser.
+- WebBrowserActivity, which shows links, related articles, "Read this on the Web" and ad pages.
+  Its one `(String)V` method that calls `WebView.loadUrl` is hooked, so exactly the pages
+  SmartNews would load as web pages leave, including related articles for which SmartNews found
+  no SmartView version; the activity then finishes. With `smart_view_articles` on, pages started
+  with `allowSmartView` leave right after `super.onCreate`, before the SmartView lookup: the hook
+  clears the intent's URL and the activity finishes through its own "no URL" path.
+
+Pages on `smartnews.com` and its subdomains stay in the app because they rely on its bridges
+(missions, coupons, explainers). The My missions page uses SnClientBrowserActivity and is not
+affected. Articles read in a browser are presumably not counted by SmartNews' reading missions
+(not checked); with the default options SmartView articles stay in the app.
+
+26.10.30 (universal APK, default options) on an Android 16 (API 36) emulator, US edition:
+"Read this on the Web" and a related link without a SmartView version opened in a Chrome Custom
+Tab, and back returned to the SmartView article. That image's emulator process then repeatedly
+crashed (access violation) while SmartNews showed SmartView articles, including articles the
+patch keeps in the app, so the remaining checks ran on an Android 17 (API 37) emulator:
+
+- 26.10.30 universal APK, default options, Japanese and US editions: feed articles (all SmartView)
+  stayed in the app and back returned to the feed; WebBrowserActivity started directly with an
+  outside URL, with and without `allowSmartView`, opened a Chrome Custom Tab, and a smartnews.com
+  URL stayed in the app.
+- `smart_view_articles` on: feed articles opened in a Chrome Custom Tab, the smartnews.com
+  explainer stayed, and a source article opened from the explainer (StandaloneArticleActivity)
+  went to Chrome with back returning to the explainer. StandaloneArticleActivity started as the
+  task root went to Chrome with MainActivity below it (26.10.30 and 26.10.10). With `custom_tabs`
+  off, Chrome's browser activity opened instead and back returned to SmartNews.
+- Firefox 157 as the default browser: pages opened and rendered in Firefox's Custom Tab. A
+  link-router app as the default browser: pages reached its app chooser.
+- An ARM64-only Chromium-based browser as the chosen browser (a two-package list, also typed with
+  a space after the comma) and as the default browser: its Custom Tab opened. Its renderer crashes
+  under the emulator's ARM translation even when it opens a page by itself, so the page content
+  was not shown there.
+- 26.9.20, 26.10.10 and 26.10.20 universal APKs and the Google Play APKMs of 26.10.10, 26.10.20
+  and 26.10.30 with `smart_view_articles` on: feed articles opened in a Chrome Custom Tab and back
+  returned to SmartNews (26.9.20, 26.10.10 and the 26.10.20 APKM also after the last code
+  change). WebBrowserActivity started directly sent outside pages to Chrome, also through the
+  `allowSmartView` path, and kept a smartnews.com page on 26.9.20, 26.10.10, 26.10.20 (APKM) and
+  26.10.30.
+
+The crash logs of the completed runs had no SmartNews entries. The author also confirmed the
+patch working on a phone.
+
 ## Reddit
 
 `Auto-translate Reddit content` invokes Reddit's existing translation callbacks

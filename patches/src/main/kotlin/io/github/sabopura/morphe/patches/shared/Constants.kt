@@ -84,4 +84,14 @@ object Constants {
         signatures = SMARTNEWS_COMPATIBILITY.signatures,
         targets = SMARTNEWS_COMPATIBILITY.targets.filter { it.version in setOf("26.9.20", "26.10.10", "26.10.20", "26.10.30") },
     )
+
+    val SMARTNEWS_BROWSER_COMPATIBILITY = Compatibility(
+        name = "SmartNews",
+        packageName = PACKAGE_NAME,
+        description = "SmartNews pages in an external browser (26.9.20 and later)",
+        apkFileType = ApkFileType.APK,
+        appIconColor = 0x0C73C7,
+        signatures = SMARTNEWS_COMPATIBILITY.signatures,
+        targets = SMARTNEWS_COMPATIBILITY.targets.filter { it.version in setOf("26.9.20", "26.10.10", "26.10.20", "26.10.30") },
+    )
 }

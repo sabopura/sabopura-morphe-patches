@@ -3,7 +3,7 @@ group = "io.github.sabopura.morphe.patches"
 patches {
     about {
         name = "Sabopura Morphe Patches"
-        description = "Patches for use with Morphe: danmaku comments and ambient light for YouTube, chat, danmaku and playback enhancements for Twitch, auto-translate for Reddit, mission reward auto-claim for SmartNews, and ad, telemetry or popup cleanup and fixes for SmartNews, Pinterest, pixiv, Google News and Sankaku."
+        description = "Patches for use with Morphe: danmaku comments and ambient light for YouTube, chat, danmaku and playback enhancements for Twitch, auto-translate for Reddit, mission reward auto-claim and opening pages in another browser for SmartNews, and ad, telemetry or popup cleanup and fixes for SmartNews, Pinterest, pixiv, Google News and Sankaku."
         source = "https://github.com/sabopura/sabopura-morphe-patches"
         author = "sabopura"
         contact = "na"

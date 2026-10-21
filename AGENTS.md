@@ -13,7 +13,7 @@
 Use JDK 21.
 
 ```sh
-./gradlew :patches:test :extensions:twitch:testDebugUnitTest :extensions:youtube:testDebugUnitTest
+./gradlew :patches:test :extensions:twitch:testDebugUnitTest :extensions:youtube:testDebugUnitTest :extensions:smartnews:testDebugUnitTest
 ./gradlew :patches:buildAndroid :patches:generatePatchesList
 ```
 
